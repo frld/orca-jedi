@@ -62,6 +62,8 @@ CASE("test basic state") {
         state_config.getString("nemo field file"));
     EXPECT(params.varianceFieldFile.value() ==
         state_config.getString("variance field file"));
+    EXPECT(params.maskFieldFile.value() ==
+        state_config.getString("mask field file"));
     EXPECT(params.analyticInit.value().value_or(true));
     auto datetime = static_cast<util::DateTime>(state_config.getString("date"));
     EXPECT(params.date.value() == datetime);

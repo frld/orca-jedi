@@ -61,10 +61,12 @@ class State : public util::Printable,
         const eckit::Configuration &);
   State(const Geometry &, const State &);
   State(const State &);
+  State(const oops::Variables &, const State &);
   virtual ~State();
 
   State & operator=(const State &);
   void zero();
+  void accumul(const double &, const State &);
 
 /// Interactions with Increment
   State & operator+=(const Increment &);
@@ -100,11 +102,16 @@ class State : public util::Printable,
   const atlas::FieldSet & stateFields() const {return stateFields_;}
   atlas::FieldSet & stateFields() {return stateFields_;}
 
+  void toFieldSet(atlas::FieldSet &) const;  
+
   const oops::Variables & variables() const {return vars_;}
   oops::Variables & variables() {return vars_;}
 
+  atlas::Field getField(int) const;
+
  private:
   void setupStateFields();
+  void applyMaskToStateFields(atlas::FieldSet &);
   void print(std::ostream &) const override;
   std::shared_ptr<const Geometry> geom_;
   oops::Variables vars_;

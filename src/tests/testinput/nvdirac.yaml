@@ -1,0 +1,55 @@
+background error:
+  covariance model: ORCAstatic
+  mode: 2
+  covtype: Shapiro
+#  covtype: Nemovar
+increment variables:
+  - ice_area_fraction
+dirac:
+  date: 2021-06-30T12:00:00Z
+  ixdir: [20]
+  iydir: [10]
+  izdir: [1]
+  var: iiceconc
+
+geometry:
+  nemo variables:
+    - name: ice_area_fraction
+      nemo field name: iiceconc
+      model space: surface
+    - name: sea_surface_temperature
+      nemo field name: votemper
+      model space: surface
+    - name: sea_water_potential_temperature
+      nemo field name: votemper
+      model space: volume
+    - name: ice_area_fraction_background_error
+      nemo field name: sic_tot_var
+      model space: surface
+      variable type: background variance
+  grid name: ORCA2_T
+  number levels: 10
+  use nemovar: true
+background:
+  date: 2021-06-30T12:00:00Z
+  state variables: [ ice_area_fraction ]
+  nemo field file: Data/orca2_t_nemo.nc
+#  variance field file: Data/orca2_t_bkg_var.nc
+  mask field file: Data/orca2_mask.nc
+output dirac:
+  filepath: testoutput/nvdirac_cov_%id%
+#  datadir: testoutput
+#  exp: dirac_cov_%id%
+#  type: an
+#output variance:
+#  datadir: testoutput
+#  exp: dirac_cov_var
+#  type: an
+
+# NEMOVAR from OOPS_SRC/test/testinput/3dfgat.json
+#cost_function :
+#   Variables:
+#     mode: 2
+   
+#test:
+#  reference filename: testoutput/test_ostia_seaice_obs_hofx3d.ref

@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "orca-jedi/errorcovariance/ErrorCovariance.h"
+#include "orca-jedi/covariance/Covariance.h"
 #include "orca-jedi/geometry/Geometry.h"
 #include "orca-jedi/interpolator/Interpolator.h"
 #include "orca-jedi/increment/Increment.h"
@@ -15,7 +15,9 @@
 #include "orca-jedi/model/ModelBiasIncrement.h"
 #include "orca-jedi/model/ModelBiasCovariance.h"
 #include "orca-jedi/state/State.h"
+#include "orca-jedi/utilities/ModelData.h"
 #include "orca-jedi/variablechanges/VariableChange.h"
+#include "orca-jedi/variablechanges/LinearVariableChange.h"
 
 namespace orcamodel {
 
@@ -24,7 +26,7 @@ struct OrcaModelTraits {
   static std::string nameCovar() {return "ORCAstatic";}
   static std::string nameCovar4D() {return "ORCAstatic";}
 
-  typedef orcamodel::ErrorCovariance           Covariance;
+  typedef orcamodel::Covariance                Covariance;
   typedef orcamodel::Geometry                  Geometry;
 
   typedef orcamodel::Interpolator              LocalInterpolator;
@@ -35,6 +37,8 @@ struct OrcaModelTraits {
   typedef orcamodel::ModelBiasCovariance       ModelAuxCovariance;
   typedef orcamodel::State                     State;
   typedef orcamodel::VariableChange            VariableChange;
+  typedef orcamodel::LinearVariableChange      LinearVariableChange;
+  typedef orcamodel::ModelData                 ModelData;
 };
 
 }  // namespace orcamodel

@@ -89,7 +89,7 @@ std::string find_nc_var_name(const netCDF::NcFile& ncFile,
 }
 }  // namespace
 
-NemoFieldReader::NemoFieldReader(eckit::PathName& filename)
+NemoFieldReader::NemoFieldReader(eckit::PathName& filename, bool readDate)
   : ncFile(nullptr), datetimes_() {
   oops::Log::debug() << "orcamodel::NemoFieldReader::NemoFieldReader filename: "
                      << filename.fullName().asString() << std::endl;
@@ -110,11 +110,13 @@ NemoFieldReader::NemoFieldReader(eckit::PathName& filename)
     throw eckit::BadValue(err_stream.str(), Here());
   }
 
-  time_dimvar_name_ = find_nc_var_name(*ncFile, true,
-                                       {"t", "time", "time_counter"});
   z_dimvar_name_ = find_nc_var_name(*ncFile, false, {"z", "deptht"});
 
-  read_datetimes();
+  if (readDate) {
+    time_dimvar_name_ = find_nc_var_name(*ncFile, true,
+                                         {"t", "time", "time_counter"});
+    read_datetimes();
+  }
 }
 
 size_t NemoFieldReader::read_dim_size(const std::string& name) {
@@ -354,6 +356,14 @@ std::vector<double> NemoFieldReader::read_var_slice(const std::string& varname,
     size_t nz = read_dim_size(z_dimvar_name_);
     size_t nlevels = field_view.shape(1);
 
+  oops::Log::debug() << "orcamodel::NemoFieldReader::read_volume var: "   // DJL
+                     << " nx ny nz nlevels " << nx         // DJL
+                     << " " << ny    // DJL
+                     << " " << nz    // DJL
+                     << " " << nlevels  // DJL
+                     << " t_indx " << t_indx    // DJL 
+                     << std::endl;          // DJL
+                     
     if (field_view.shape(0) != nx*ny) {
       std::ostringstream err_stream;
       err_stream << "orcamodel::NemoFieldReader::read_volume_var field_view 1st"
@@ -369,6 +379,8 @@ std::vector<double> NemoFieldReader::read_var_slice(const std::string& varname,
                  << " z dimension " << nz << " for varname " << varname;
       throw eckit::BadValue(err_stream.str(), Here());
     }
+
+    oops::Log::debug() << "orcamodel::NemoFieldReader::read_volume a varname " << varname << std::endl;   // DJL
 
     netCDF::NcVar nc_var = ncFile->getVar(varname);
     if (nc_var.isNull()) {
@@ -709,6 +721,13 @@ void NemoFieldReader::read_volume_var(const std::string& varname,
       throw eckit::BadValue(err_stream.str(), Here());
     }
 
+    // DJL
+//    oops::Log::debug() << "buffer "; 
+//    for (int i=0; i<nx*ny; ++i){ 
+//      oops::Log::debug() << buffer[i];
+//    }
+//    oops::Log::debug() << std::endl;
+
     // in atlas fields the levels indices change the fastest, so we need to
     // swap the indexing order from the netCDF data.
     const size_t numNodes = field_view.shape(0);
@@ -717,8 +736,11 @@ void NemoFieldReader::read_volume_var(const std::string& varname,
         if (ghost(inode)) continue;
         field_view(inode, k) =
           buffer[k*nx*ny + index_glbarray(ij(inode, 0), ij(inode, 1))];
+//        oops::Log::debug() << field_view(inode, k) << " "; // DJL
       }
+      // DJL
     }
+//    oops::Log::debug() << std::endl;   // DJL
   } catch(netCDF::exceptions::NcException& e)
   {
     std::ostringstream err_stream;

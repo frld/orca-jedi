@@ -31,61 +31,94 @@ void readFieldsFromFile(
     oops::Log::trace() << "orcamodel::readFieldsFromFile:: start for valid_date"
                        << " " << valid_date << std::endl;
 
-    // Open Nemo Feedback file
+    // Open Nemo Field file
     std::string nemo_file_name;
+    bool skip = false;
+    bool readDate = true;
     if (variable_type == "background") {
       nemo_file_name = params.nemoFieldFile.value();
     }
     if (variable_type == "background variance") {
       nemo_file_name = params.varianceFieldFile.value().value_or("");
+      if (nemo_file_name == "") {skip = true;}
+    }
+    if (variable_type == "mask") {
+      nemo_file_name = params.maskFieldFile.value().value_or("");
+      if (nemo_file_name == "") {skip = true;}
+      readDate = false;
     }
 
-    auto nemo_field_path = eckit::PathName(nemo_file_name);
-    oops::Log::debug() << "orcamodel::readFieldsFromFile:: nemo_field_path "
-                       << nemo_field_path << std::endl;
-    NemoFieldReader nemo_file(nemo_field_path);
-
-    // Read fields from Nemo field file
-    // field names in the atlas fieldset are assumed to match their names in
-    // the field file
-    const size_t time_indx = nemo_file.get_nearest_datetime_index(valid_date);
-    oops::Log::debug() << "orcamodel::readFieldsFromFile:: time_indx "
-                       << time_indx << std::endl;
-
-    std::map<std::string, std::string> varCoordTypeMap;
-    {
-      const oops::Variables vars = geom.variables();
-      const std::vector<std::string> coordSpaces =
-        geom.variableNemoSpaces(vars);
-      for (int i=0; i < vars.size(); ++i)
-        varCoordTypeMap[vars[i]] = coordSpaces[i];
-    }
-    for (atlas::Field field : fs) {
-      std::string fieldName = field.name();
-      std::string nemoName = geom.nemo_var_name(fieldName);
+    if (!skip) {
+      auto nemo_field_path = eckit::PathName(nemo_file_name);
       oops::Log::debug() << "orcamodel::readFieldsFromFile:: "
-                         << "geom.variable_in_variable_type(\""
-                         << fieldName << "\", \"" << variable_type << "\") "
-                         << geom.variable_in_variable_type(fieldName,
-                              variable_type)
-                         << std::endl;
-      if (geom.variable_in_variable_type(fieldName, variable_type)) {
-        auto field_view = atlas::array::make_view<double, 2>(field);
-        if (varCoordTypeMap[fieldName] == "surface") {
-          nemo_file.read_surf_var(nemoName, geom.mesh(), time_indx, field_view);
-        } else if (varCoordTypeMap[fieldName] == "vertical") {
-          nemo_file.read_vertical_var(nemoName, geom.mesh(), field_view);
-        } else {
-          nemo_file.read_volume_var(nemoName, geom.mesh(), time_indx,
-              field_view);
-        }
-        auto missing_value = nemo_file.read_fillvalue<double>(nemoName);
-        field.metadata().set("missing_value", missing_value);
-        field.metadata().set("missing_value_type", "approximately-equals");
-        field.metadata().set("missing_value_epsilon", NEMO_FILL_TOL);
-        // Add a halo exchange following read to fill out halo points
-        geom.functionSpace().haloExchange(field);
+                         << nemo_field_path << std::endl;
+      oops::Log::debug() << "orcamodel::readFieldsFromFile:: variable_type "
+                         << variable_type << std::endl;
+
+      NemoFieldReader nemo_file(nemo_field_path, readDate=readDate);
+
+      // Read fields from Nemo field file
+      // field names in the atlas fieldset are assumed to match their names in
+      // the field file
+      const size_t time_indx = nemo_file.get_nearest_datetime_index(valid_date);
+      oops::Log::debug() << "orcamodel::readFieldsFromFile:: time_indx "
+                         << time_indx << std::endl;
+
+      std::map<std::string, std::string> varCoordTypeMap;
+      {
+        const oops::Variables vars = geom.variables();
+        const std::vector<std::string> coordSpaces =
+          geom.variableNemoSpaces(vars);
+        for (int i=0; i < vars.size(); ++i)
+          varCoordTypeMap[vars[i]] = coordSpaces[i];
       }
+      
+      if (variable_type == "mask") {
+//        atlas::Field field = fs[0];
+//        auto field_view = atlas::array::make_view<double, 2>(field);
+        std::vector<size_t> varSizes = geom.variableSizes(geom.variables());
+        oops::Log::debug() << "orcamodel::readFieldsFromFile:: varSizes[0] " << varSizes[0] << std::endl;
+        //int masknlevs=31;
+        //atlas::Field mask = geom.functionSpace().createField<double>(
+        //  atlas::option::name("mask") | atlas::option::levels(masknlevs));
+        for (atlas::Field field : fs) {
+          auto field_view = atlas::array::make_view<double, 2>(field);
+          nemo_file.read_volume_var("tmask", geom.mesh(), 0, field_view); 
+          // Add a halo exchange following read to fill out halo points
+          geom.functionSpace().haloExchange(field);
+        }
+      
+      } else {
+        for (atlas::Field field : fs) {
+          std::string fieldName = field.name();
+          std::string nemoName = geom.nemo_var_name(fieldName);
+          oops::Log::debug() << "orcamodel::readFieldsFromFile:: "
+                             << "geom.variable_in_variable_type(\""
+                             << fieldName << "\", \"" << variable_type << "\") "
+                             << geom.variable_in_variable_type(fieldName,
+                                  variable_type)
+                             << std::endl;
+          if (geom.variable_in_variable_type(fieldName, variable_type)) {
+            auto field_view = atlas::array::make_view<double, 2>(field);
+            if (varCoordTypeMap[fieldName] == "surface") {
+              nemo_file.read_surf_var(nemoName, geom.mesh(), time_indx, field_view);
+            } else if (varCoordTypeMap[fieldName] == "vertical") {
+              nemo_file.read_vertical_var(nemoName, geom.mesh(), field_view);
+            } else {
+              nemo_file.read_volume_var(nemoName, geom.mesh(), time_indx,
+                  field_view);
+            }
+            auto missing_value = nemo_file.read_fillvalue<double>(nemoName);
+            field.metadata().set("missing_value", missing_value);
+            field.metadata().set("missing_value_type", "approximately-equals");
+            field.metadata().set("missing_value_epsilon", NEMO_FILL_TOL);
+            // Add a halo exchange following read to fill out halo points
+            geom.functionSpace().haloExchange(field);
+          }
+        }
+      }
+      
+      
     }
 
     oops::Log::trace() << "orcamodel::readFieldsFromFile:: readFieldsFromFile "
@@ -102,8 +135,9 @@ void writeFieldsToFile(
     std::string output_filename =
       params.outputNemoFieldFile.value().value_or("");
     if (output_filename == "")
-      throw eckit::BadValue(std::string("orcamodel::writeFieldsToFile:: ")
-          + "file name not specified", Here());
+//      throw eckit::BadValue(std::string("orcamodel::writeFieldsToFile:: ")
+//          + "file name not specified", Here());
+        output_filename = "dummy.nc";    // DJL
 
     std::map<std::string, std::string> varCoordTypeMap;
     {
@@ -114,8 +148,108 @@ void writeFieldsToFile(
         varCoordTypeMap[vars[i]] = coordSpaces[i];
     }
 
+    oops::Log::debug() << "orcamodel::writeFieldsToFile:: output_filename "
+                       << output_filename << std::endl;
+
     auto nemo_field_path = eckit::PathName(output_filename);
-    oops::Log::debug() << "orcamodel::writeFieldsToFile:: nemo_field_path "
+    oops::Log::debug() << "orcamodel::writeFieldsToFile:: "
+                       << nemo_field_path << std::endl;
+
+    writeGenFieldsToFile(nemo_field_path, geom, valid_date, fs);
+}
+
+/*    std::vector<util::DateTime> datetimes = {valid_date};
+    std::vector<double> levels((*fs.begin()).shape(1), 0);
+    for (size_t iLev = 0; iLev < levels.size(); ++iLev) { levels[iLev] = iLev; }
+
+    auto writeRankFields = [&](){
+      NemoFieldWriter field_writer(nemo_field_path, geom.mesh(), datetimes,
+          levels);
+      for (atlas::Field field : fs) {
+        std::string fieldName = field.name();
+        std::string nemoName = geom.nemo_var_name(fieldName);
+        auto datatype = field.datatype().str();
+        oops::Log::debug() << "orcamodel::writeFieldsToFile:: datatype "
+                       << datatype << std::endl;
+        if (datatype == "int32_t" ){
+        auto field_view = atlas::array::make_view<int32_t, 2>(field);         
+        if (varCoordTypeMap[fieldName] == "surface") {
+          field_writer.write_surf_var(nemoName, field_view, 0);
+        } else {
+          field_writer.write_vol_var(nemoName, field_view, 0);
+        } }
+        else {
+        auto field_view = atlas::array::make_view<double, 2>(field); 
+        if (varCoordTypeMap[fieldName] == "surface") {
+          field_writer.write_surf_var(nemoName, field_view, 0);
+        } else {
+          field_writer.write_vol_var(nemoName, field_view, 0);
+        } }
+        
+      }
+    };
+
+    // Write from rank 0 unless the data is distributed. If the date is
+    // distributed sequentially write the data to the output file.
+    if (geom.distributionType() == "serial") {
+        if (geom.getComm().rank() == 0) writeRankFields();
+    } else {
+      geom.getComm().barrier();
+      size_t rank = 0;
+      while (rank < geom.getComm().size()) {
+        if (rank == geom.getComm().rank()) {
+          writeRankFields();
+        }
+        rank++;
+      }
+    }
+    geom.getComm().barrier();
+} */
+
+void writeIncFieldsToFile(
+  const eckit::Configuration & conf,
+  const Geometry & geom,
+  const util::DateTime & valid_date,
+  const atlas::FieldSet & fs) {
+    oops::Log::trace() << "orcamodel::writeIncFieldsToFile:: start for valid_date"
+                       << " " << valid_date << std::endl;
+
+    // Filepath
+    std::string filepath = conf.getString("filepath");
+    if (conf.has("member")) {
+      std::ostringstream out;
+      out << std::setfill('0') << std::setw(6) << conf.getInt("member");
+      filepath.append("_");
+      filepath.append(out.str());
+    }
+
+    oops::Log::debug() << "filepath " << filepath << std::endl;
+    std::string nemo_field_path = filepath;
+    nemo_field_path.append(".nc");
+      oops::Log::info() << "Writing file: " << nemo_field_path << std::endl;
+      
+    writeGenFieldsToFile(nemo_field_path, geom, valid_date, fs);
+}
+
+void writeGenFieldsToFile(
+  const std::string nemo_field_path,
+  const Geometry & geom,
+  const util::DateTime & valid_date,
+  const atlas::FieldSet & fs) {
+    oops::Log::trace() << "orcamodel::writeGenFieldsToFile:: start for valid_date"
+                       << " " << valid_date << std::endl;
+
+    std::map<std::string, std::string> varCoordTypeMap;
+    {
+      const oops::Variables vars = geom.variables();
+      const std::vector<std::string> coordSpaces =
+        geom.variableNemoSpaces(vars);
+      for (int i=0; i < vars.size(); ++i)
+        varCoordTypeMap[vars[i]] = coordSpaces[i];
+    }
+
+//    auto nemo_field_path = eckit::PathName(output_filename);
+    oops::Log::debug() << "orcamodel::writeGenFieldsToFile:: "
                        << nemo_field_path << std::endl;
     std::vector<util::DateTime> datetimes = {valid_date};
     std::vector<double> levels((*fs.begin()).shape(1), 0);
@@ -127,13 +261,35 @@ void writeFieldsToFile(
       for (atlas::Field field : fs) {
         std::string fieldName = field.name();
         std::string nemoName = geom.nemo_var_name(fieldName);
-        auto field_view = atlas::array::make_view<double, 2>(field);
+//        auto field_view = atlas::array::make_view<double, 2>(field);
+        auto datatype = field.datatype().str();
+
+        oops::Log::debug() << "orcamodel::writeGenFieldsToFile:: fieldname " 
+                       << fieldName
+                       << " datatype "
+                       << datatype << std::endl;
+        if (datatype == "int32" ){
+        auto field_view = atlas::array::make_view<int32_t, 2>(field);         
         if (varCoordTypeMap[fieldName] == "surface") {
           field_writer.write_surf_var(nemoName, field_view, 0);
         } else {
           field_writer.write_vol_var(nemoName, field_view, 0);
-        }
+        } }
+        else {
+        auto field_view = atlas::array::make_view<double, 2>(field); 
+        if (varCoordTypeMap[fieldName] == "surface") {
+          field_writer.write_surf_var(nemoName, field_view, 0);
+        } else {
+          field_writer.write_vol_var(nemoName, field_view, 0);
+        } }
+
+//        if (varCoordTypeMap[fieldName] == "surface") {
+//          field_writer.write_surf_var(nemoName, field_view, 0);
+//        } else {
+//          field_writer.write_vol_var(nemoName, field_view, 0);
+//        }
       }
+
     };
 
     // Write from rank 0 unless the data is distributed. If the date is

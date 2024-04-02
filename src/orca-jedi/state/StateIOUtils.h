@@ -26,5 +26,15 @@ void writeFieldsToFile(
   const Geometry & geom,
   const util::DateTime & valid_date,
   const atlas::FieldSet & fs);
+void writeIncFieldsToFile(
+  const eckit::Configuration & params,
+  const Geometry & geom,
+  const util::DateTime & valid_date,
+  const atlas::FieldSet & fs);
+void writeGenFieldsToFile(
+  const std::string nemo_field_path,
+  const Geometry & geom,
+  const util::DateTime & valid_date,
+  const atlas::FieldSet & fs);
 
 }  // namespace orcamodel

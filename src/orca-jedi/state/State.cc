@@ -36,10 +36,12 @@
 #include "ufo/GeoVaLs.h"
 
 #include "orca-jedi/geometry/Geometry.h"
+#include "orca-jedi/variablechanges/VariableChange.h"
 #include "orca-jedi/increment/Increment.h"
 #include "orca-jedi/state/State.h"
 #include "orca-jedi/state/StateIOUtils.h"
 
+#define NEMO_FILL_TOL 1e-6
 
 namespace orcamodel {
 
@@ -72,6 +74,20 @@ State::State(const Geometry & geom,
 
   setupStateFields();
 
+  atlas::FieldSet maskFields = atlas::FieldSet();
+  std::vector<size_t> varSizes = geom_->variableSizes(vars_);
+  maskFields.add(geom_->functionSpace().createField<double>(
+           atlas::option::name("mask") |
+           atlas::option::levels(31))); 
+
+//    auto field_view = atlas::array::make_view<double, 2>(maskFields[0]);         // DJL
+//    for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
+//      for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
+//        if (!ghost(j)) field_view(j, k) = 0;
+//        field_view(j, k) = 3;
+//      }
+//    }
+
   if (params_.analyticInit.value().value_or(false)) {
     this->analytic_init(*geom_);
   } else {
@@ -79,7 +95,28 @@ State::State(const Geometry & geom,
        stateFields_);
     readFieldsFromFile(params_, *geom_, validTime(), "background variance",
        stateFields_);
+    readFieldsFromFile(params_, *geom_, validTime(), "mask",
+       maskFields);
   }
+
+  writeGenFieldsToFile("test_statefields_1.nc", geom, validTime(), stateFields_);   // DJL
+
+  writeGenFieldsToFile("test_maskfields_1.nc", geom, validTime(), maskFields);      // DJL
+  
+  applyMaskToStateFields(maskFields);
+
+// write out state
+  
+  writeGenFieldsToFile("test_statefields_2.nc", geom, validTime(), stateFields_);   // DJL
+
+// update gmask
+
+  geom.set_gmask(maskFields[0]);
+  
+// update hmask (this is "halo" mask but bump uses it to set the grid so it also needs to be land masked)
+
+//  geom.set_hmask(maskFields[0]);
+  
   oops::Log::trace() << "State(ORCA)::State created." << std::endl;
 }
 
@@ -97,6 +134,14 @@ State::State(const Geometry & resol, const State & other)
   ASSERT(other.geom_->grid().uid() == resol.grid().uid());
   oops::Log::trace() << "State(ORCA)::State resolution change: "
                      << " copied as there is no change" << std::endl;
+}
+
+State::State(const oops::Variables & variables, const State & other)
+  : State(other) {
+  eckit::LocalConfiguration change_config;
+  VariableChange change(change_config, *geom_);
+  change.changeVar(*this, variables);
+  oops::Log::trace() << "State(ORCA)::State created with variable change." << std::endl;
 }
 
 State::State(const State & other)
@@ -126,10 +171,32 @@ State & State::operator=(const State & rhs) {
 // Interactions with Increments
 
 State & State::operator+=(const Increment & dx) {
-  std::string err_message =
-      "orcamodel::State::State::operator+= not implemented";
-  throw eckit::NotImplemented(err_message, Here());
+ 
   oops::Log::trace() << "State(ORCA)::add increment starting" << std::endl;
+
+  ASSERT(this->validTime() == dx.validTime());
+
+  auto ghost = atlas::array::make_view<int32_t, 1>(
+      geom_->mesh().nodes().ghost());
+  for (int i = 0; i< stateFields_.size();i++)
+  {
+    atlas::Field field = stateFields_[i];
+    atlas::Field field1 = dx.incrementFields()[i];
+//  for (atlas::Field field : incrementFields_) {
+    std::string fieldName = field.name();
+    std::string fieldName1 = field1.name();
+    oops::Log::debug() << "orcamodel::Increment::add:: field name = " << fieldName
+                       << " field name 1 = " << fieldName1
+                       << std::endl;
+    auto field_view = atlas::array::make_view<double, 2>(field);
+    auto field_view1 = atlas::array::make_view<double, 2>(field1);
+    for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
+      for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
+        if (!ghost(j)) field_view(j, k) += field_view1(j, k);
+      }
+    }
+  }
+ 
   oops::Log::trace() << "State(ORCA)::add increment done" << std::endl;
   return *this;
 }
@@ -177,6 +244,50 @@ void State::setupStateFields() {
   }
 }
 
+void State::applyMaskToStateFields(atlas::FieldSet & maskFields) {
+
+  oops::Log::debug() << "State(ORCA)::applyMaskToStateFields start" << std::endl;
+
+// extract mask from Atlas fieldset
+  
+//  for (atlas::Field field : maskFields) {              // DJL
+//    oops::Log::debug() << "State(ORCA)::applyMaskToStateFields maskFields" << field.name() << std::endl;
+//    if (field.name() == "mask"){
+//       atlas::Field mask = field;
+//       break;
+//    } 
+//  } 
+  atlas::Field mask = maskFields[0];
+
+  auto mask_view = atlas::array::make_view<double, 2>(mask);
+
+  for (atlas::Field field : stateFields_) {
+    oops::Log::debug() << "State(ORCA)::applyMaskToStateFields " << field.name() << std::endl;
+    double missing_value;
+    if (field.metadata().has("missing_value")) {
+      missing_value = field.metadata().get<double>("missing_value");
+    } else {  
+      missing_value = -1e38;
+      field.metadata().set("missing_value", missing_value);
+      field.metadata().set("missing_value_type", "approximately-equals");
+      field.metadata().set("missing_value_epsilon", NEMO_FILL_TOL);
+    }
+    oops::Log::debug() << "State(ORCA)::applyMaskToStateFields missing_value " << missing_value << std::endl;    
+    auto field_view = atlas::array::make_view<double, 2>(field);
+    for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
+      for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
+//        oops::Log::debug() << mask_view(j, k) << " ";    // DJL
+        if (mask_view(j, k) == 0) {
+          field_view(j, k) = missing_value;
+        }
+      }
+    }
+//    oops::Log::debug() << std::endl;  // DJL
+        
+  }
+  oops::Log::debug() << "State(ORCA)::applyMaskToStateFields complete" << std::endl;
+}
+
 void State::write(const OrcaStateParameters & params) const {
   oops::Log::trace() << "State(ORCA)::write starting" << std::endl;
   writeFieldsToFile(params, *geom_, validTime(), stateFields_);
@@ -206,8 +317,8 @@ void State::print(std::ostream & os) const {
 void State::zero() {
   oops::Log::trace() << "State(ORCA)::zero starting" << std::endl;
 
-  auto ghost = atlas::array::make_view<int32_t, 1>(
-      geom_->mesh().nodes().ghost());
+//  auto ghost = atlas::array::make_view<int32_t, 1>(
+//      geom_->mesh().nodes().ghost());
   for (atlas::Field field : stateFields_) {
     std::string fieldName = field.name();
     oops::Log::debug() << "orcamodel::State::zero:: field name = " << fieldName
@@ -215,12 +326,22 @@ void State::zero() {
     auto field_view = atlas::array::make_view<double, 2>(field);
     for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
       for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
-        if (!ghost(j)) field_view(j, k) = 0;
+//        if (!ghost(j)) field_view(j, k) = 0;
+        field_view(j, k) = 0;
       }
     }
   }
 
   oops::Log::trace() << "State(ORCA)::zero done" << std::endl;
+}
+
+void State::accumul(const double & zz, const State & xx) {
+// add something
+
+  std::string err_message =
+      "orcamodel::State::accumul not implemented";
+  throw eckit::NotImplemented(err_message, Here());
+
 }
 
 double State::norm(const std::string & field_name) const {
@@ -257,6 +378,40 @@ double State::norm(const std::string & field_name) const {
     return 0;
 
   return sqrt(squares)/valid_points;
+}  
+  
+void State::toFieldSet(atlas::FieldSet & fset) const {
+  oops::Log::debug() << "State toFieldSet starting" << std::endl;
+
+  fset = atlas::FieldSet();
+
+  for (size_t i=0; i < vars_.size(); ++i) {
+    // add variable if it isn't already in incrementFields
+//    std::vector<size_t> varSizes = geom_->variableSizes(vars_);
+//    if (!fset_.has(vars_[i])) {
+//      fset_.add(geom_->functionSpace().createField<double>(
+//           atlas::option::name(vars_[i]) |
+//           atlas::option::levels(varSizes[i])));
+//    }
+    // copy variable from _Fields to new field set
+    atlas::Field field = stateFields_[i];
+    oops::Log::debug() << "Copy state field toFieldSet " << field.name() << std::endl;
+    fset->add(field);
+
+    auto field_view = atlas::array::make_view<double, 2>(field);
+//    int xpt = 141;  int ypt = 73;  
+    int xpt = 91; int ypt = 49;
+    int jpt = ypt*182 + xpt;  // DJL hardwired to work with orca2  
+    oops::Log::debug() << "DJL value " << jpt << " " << field_view(jpt-1, 0) << " " << field_view(jpt, 0) << " " << field_view(jpt+1, 0) << std::endl;
+    
+  }
+
+  oops::Log::debug() << "State toFieldSet done" << std::endl;
+}
+
+
+atlas::Field State::getField(int i) const {
+  return stateFields_[i];
 }
 
 }  // namespace orcamodel

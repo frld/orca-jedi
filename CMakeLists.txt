@@ -39,6 +39,9 @@ ecbuild_debug( "   oops_FEATURES : [${oops_FEATURES}]" )
 find_package( ufo REQUIRED)
 ecbuild_debug( "   ufo_FEATURES : [${ufo_FEATURES}]" )
 
+find_package( saber REQUIRED)
+ecbuild_debug( "   saber_FEATURES : [${saber_FEATURES}]" )
+
 find_package( nemo-feedback )
 
 ################################################################################

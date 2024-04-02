@@ -1,0 +1,98 @@
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: ID
+#    saber block name: BUMP_NICAS
+#    read:
+#      general:
+#        testing: true
+#      io:
+#        data directory: Data
+#        files prefix: dirac_bump_nicas/test
+#        overriding nicas file: error_covariance_training_bump_nicas/test_nicas
+#      drivers:
+#        multivariate strategy: univariate
+#        read local nicas: true
+#      model:
+#        do not cross mask boundaries: true
+#      nicas:
+#        explicit length-scales: true
+#        horizontal length-scale:
+#        - groups: 
+#          - ice_area_fraction
+#          value: 2.0e6
+#        vertical length-scale:
+#        - groups:
+#          - ice_area_fraction 
+#          value: 10
+  saber outer blocks:
+  - saber block name: BUMP_StdDev
+    read:
+      general:
+        testing: true
+      io:
+        data directory: Data
+        files prefix: test
+      drivers:
+        compute variance: true
+      variance:
+        explicit stddev: true
+        stddev:
+        - variables:
+          - ice_area_fraction
+          value: 1
+
+#      method: cor 
+#      grids:
+#      - prefix: bump2d
+#        variables: [ice_area_fraction]
+
+#  - saber block name: StdDev
+#    input variables: [iiceconc]
+#    output variables: [iiceconc]
+#    file:
+#      filename: #testdata/qg_error_covariance_training_bump_cov/stddev.an.2010-01-01T12:00:00Z.nc
+dirac:
+  date: 2021-06-30T12:00:00Z
+  ixdir: [20]
+  iydir: [10]
+  izdir: [1]
+  var: iiceconc
+
+geometry:
+  nemo variables:
+    - name: ice_area_fraction
+      nemo field name: iiceconc
+      model space: surface
+    - name: sea_surface_temperature
+      nemo field name: votemper
+      model space: surface
+    - name: sea_water_potential_temperature
+      nemo field name: votemper
+      model space: volume
+    - name: ice_area_fraction_background_error
+      nemo field name: sic_tot_var
+      model space: surface
+      variable type: background variance
+  grid name: ORCA2_T
+  number levels: 10
+background:
+  date: 2021-06-30T12:00:00Z
+  state variables: [ ice_area_fraction ]
+  nemo field file: Data/orca2_t_nemo.nc
+#  variance field file: Data/orca2_t_bkg_var.nc
+  mask field file: Data/orca2_mask.nc
+output dirac:
+  filepath: testoutput/bumpdirac_cov_%id%
+#  datadir: testoutput
+#  exp: dirac_cov_%id%
+#  type: an
+#output variance:
+#  datadir: testoutput
+#  exp: dirac_cov_var
+#  type: an
+
+
+
+#test:
+#  reference filename: testoutput/test_ostia_seaice_obs_hofx3d.ref

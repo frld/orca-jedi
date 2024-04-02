@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <tuple>
 
 #include "atlas/field/Field.h"
 #include "atlas/field/FieldSet.h"
@@ -28,6 +29,10 @@
 
 #include "orca-jedi/geometry/GeometryParameters.h"
 
+#include "orca-jedi/nemovar/GeometryNV.h"
+
+#include "oops/util/Logger.h"
+
 namespace atlas {
   class Field;
   class FieldSet;
@@ -46,6 +51,7 @@ class Geometry : public util::Printable {
  public:
   Geometry(const eckit::Configuration &, const eckit::mpi::Comm &);
   ~Geometry();
+  Geometry(const Geometry &); 
 
   std::vector<size_t> variableSizes(const oops::Variables &) const;
   std::vector<std::string> variableNemoSpaces(const oops::Variables & vars)
@@ -55,7 +61,9 @@ class Geometry : public util::Printable {
   void latlon(std::vector<double> & lats, std::vector<double> & lons,
               const bool halo) const;
   const atlas::FunctionSpace & functionSpace() const {return funcSpace_;}
-  const atlas::FieldSet & fields() const {return nofields_;}
+  const atlas::FieldSet & extraFields() const {return extraFields_;}
+  const atlas::FieldSet & fields() const {return extraFields_;}
+  atlas::FieldSet & extraFields() {return extraFields_;}
 
   const atlas::Grid & grid() const {return grid_;}
   const atlas::Mesh & mesh() const {return mesh_;}
@@ -65,6 +73,18 @@ class Geometry : public util::Printable {
   bool levelsAreTopDown() const {return true;}
   std::string distributionType() const {
       return params_.partitioner.value().value_or("serial");}
+  void set_gmask(atlas::Field &) const;
+//  void set_hmask(atlas::Field &) const;
+////  const nv::GeometryNV & getNVgeometry() const {return nvgeom_;}
+  std::shared_ptr<const nv::GeometryNV> getNVgeometryPtr() const {return nvgeom_;}
+//  const nv::GeometryNV & getNVgeometry() const {ASSERT(nvgeom_); return *nvgeom_;}
+  const nv::GeometryNV & getNVgeometry() const {oops::Log::trace() << "getNVgeometry DJL" << std::endl; return *nvgeom_;}
+
+// Access to data
+//    F90geom& toFortran() {return geom_->toFortran();}
+//    const F90geom& toFortran() const {return geom_->toFortran();}
+
+//  int nvgeom_avail_;          // DJL
 
  private:
   void print(std::ostream &) const;
@@ -73,11 +93,19 @@ class Geometry : public util::Printable {
   size_t n_levels_;
   OrcaGeometryParameters params_;
   atlas::Grid grid_;
+  bool usenemovar_;
   atlas::grid::Partitioner partitioner_;
   atlas::Mesh mesh_;
   atlas::functionspace::NodeColumns funcSpace_;
-  atlas::FieldSet nofields_;
+    atlas::FieldSet extraFields_;
+//  nv::GeometryNV nvgeometry_;    // nv::GeometryNV DJL?
+    std::shared_ptr<nv::GeometryNV> nvgeom_;
+
+//    std::shared_ptr<GeometryF90> geom_;
 };
+
+std::tuple<int, int> xypt(int jpt);
+
 // -----------------------------------------------------------------------------
 
 }  // namespace orcamodel

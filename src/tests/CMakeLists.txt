@@ -43,3 +43,28 @@ ecbuild_add_test( TARGET test_orcamodel_hofx3D_prof_2var
                   OMP 1
                   ARGS testinput/hofx3d_nc_prof_2vars.yaml
                   COMMAND orcamodel_hofx3D.x )
+
+ecbuild_add_test( TARGET test_orcamodel_3DVar_ice
+                  OMP 1
+                  ARGS testinput/3dvar_seaice_obs.yaml
+                  COMMAND orcamodel_3DVar.x )
+
+ecbuild_add_test( TARGET test_nvorcamodel_3DVar_ice
+                  OMP 1
+                  ARGS testinput/nv3dvar_seaice_obs.yaml
+                  COMMAND nvorcamodel_3DVar.x )
+
+ecbuild_add_test( TARGET test_orcamodel_Dirac
+                  OMP 1
+                  ARGS testinput/dirac.yaml
+                  COMMAND orcamodel_ErrorCovarianceToolbox.x )
+
+ecbuild_add_test( TARGET test_nvorcamodel_Dirac
+                  OMP 1
+                  ARGS testinput/nvdirac.yaml
+                  COMMAND nvorcamodel_ErrorCovarianceToolbox.x )
+
+ecbuild_add_test( TARGET test_orcamodel_ErrorCovarianceTraining
+                  OMP 1
+                  ARGS testinput/error_covariance_training_bump_nicas.yaml
+                  COMMAND orcamodel_ErrorCovarianceToolbox.x )

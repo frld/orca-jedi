@@ -36,8 +36,12 @@ class NemoFieldWriter {
 
     void write_surf_var(std::string varname,
         atlas::array::ArrayView<double, 2>& field_view, size_t iTime);
+    void write_surf_var(std::string varname,
+        atlas::array::ArrayView<int32_t, 2>& field_view, size_t iTime);
     void write_vol_var(std::string varname,
         atlas::array::ArrayView<double, 2>& field_view, size_t iTime);
+    void write_vol_var(std::string varname,
+        atlas::array::ArrayView<int32_t, 2>& field_view, size_t iTime);
 
  private:
     NemoFieldWriter(): ncFile() {}

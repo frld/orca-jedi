@@ -165,6 +165,45 @@ void NemoFieldWriter::write_surf_var(std::string varname,
     }
 }
 
+void NemoFieldWriter::write_surf_var(std::string varname,
+    atlas::array::ArrayView<int32_t, 2>& field_view, size_t iTime) {
+    try {
+        auto ghost = atlas::array::make_view<int32_t, 1>(mesh_.nodes().ghost());
+        auto ij = atlas::array::make_view<int32_t, 2>(
+            mesh_.nodes().field("ij"));
+
+        auto ncVar = ncFile->getVar(varname);
+        if (ncVar.isNull()) {
+          auto nxDim = ncFile->getDim("x");
+          auto nyDim = ncFile->getDim("y");
+          auto ntDim = ncFile->getDim("t");
+          ncVar = ncFile->addVar(varname, netCDF::ncInt,
+              {ntDim, nyDim, nxDim});
+        }
+
+        auto field_indices = [&](int jLat, int iLon)
+        {
+          return std::vector<size_t>{static_cast<size_t>(iTime),
+                                     static_cast<size_t>(jLat),
+                                     static_cast<size_t>(iLon)};
+        };
+
+        for (size_t inode = 0; inode < mesh_.nodes().size(); ++inode) {
+            // if (ghost(inode)) continue;
+            const int i = ij(inode, 0) + orcaGrid_.haloWest();
+            const int j = ij(inode, 1) + orcaGrid_.haloSouth();
+            ATLAS_ASSERT(i >= 0 && i < nx_halo_WE_);
+            ATLAS_ASSERT(j >= 0 && j < ny_halo_NS_);
+            ncVar.putVar(field_indices(j, i), field_view(inode, 0));
+        }
+    }
+    catch (netCDF::exceptions::NcException& e) {
+        throw eckit::FailedLibraryCall("NetCDF",
+            "orcamodel::NemoFieldWriter::write_surf_var", e.what(), Here());
+    }
+}
+
+
 void NemoFieldWriter::write_vol_var(std::string varname,
     atlas::array::ArrayView<double, 2>& field_view, size_t iTime) {
     try {
@@ -204,4 +243,46 @@ void NemoFieldWriter::write_vol_var(std::string varname,
             "orcamodel::NemoFieldWriter::write_vol_var", e.what(), Here());
     }
 }
+
+void NemoFieldWriter::write_vol_var(std::string varname,
+    atlas::array::ArrayView<int32_t, 2>& field_view, size_t iTime) {
+    try {
+        auto ghost = atlas::array::make_view<int32_t, 1>(mesh_.nodes().ghost());
+        auto ij = atlas::array::make_view<int32_t, 2>(
+            mesh_.nodes().field("ij"));
+
+        auto ncVar = ncFile->getVar(varname);
+        if (ncVar.isNull()) {
+          auto nxDim = ncFile->getDim("x");
+          auto nyDim = ncFile->getDim("y");
+          auto nzDim = ncFile->getDim("z");
+          auto ntDim = ncFile->getDim("t");
+          ncVar = ncFile->addVar(varname, netCDF::ncInt,
+              {ntDim, nzDim, nyDim, nxDim});
+        }
+
+        auto field_indices = [&](int iLev, int jLat, int iLon)
+        {
+          return std::vector<size_t>{static_cast<size_t>(iTime),
+                                     static_cast<size_t>(iLev),
+                                     static_cast<size_t>(jLat),
+                                     static_cast<size_t>(iLon)};
+        };
+
+        for (size_t k = 0; k < nLevels_; ++k) {
+            for (size_t inode = 0; inode < mesh_.nodes().size(); ++inode) {
+                // if (ghost(inode)) continue;
+                const int i = ij(inode, 0) + orcaGrid_.haloWest();
+                const int j = ij(inode, 1) + orcaGrid_.haloSouth();
+                ncVar.putVar(field_indices(k, j, i), field_view(inode, k));
+            }
+        }
+    }
+    catch (netCDF::exceptions::NcException& e) {
+        throw eckit::FailedLibraryCall("NetCDF",
+            "orcamodel::NemoFieldWriter::write_vol_var", e.what(), Here());
+    }
+}
+
+
 }  // namespace orcamodel

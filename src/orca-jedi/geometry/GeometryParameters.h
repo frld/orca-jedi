@@ -36,6 +36,7 @@ class OrcaGeometryParameters : public oops::Parameters {
   oops::RequiredParameter<std::string> gridName
     {"grid name", this};
   oops::RequiredParameter<int> nLevels {"number levels", this};
+  oops::OptionalParameter<bool> useNemovar {"use nemovar", this};
   oops::OptionalParameter<int> sourceMeshHalo {"source mesh halo", this};
   oops::OptionalParameter<std::string> partitioner {"partitioner", this};
 };

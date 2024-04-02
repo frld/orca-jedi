@@ -29,7 +29,7 @@ class NemoFieldReader : private util::ObjectCounter<NemoFieldReader> {
  public:
   static const std::string classname() {return "orcamodel::NemoFieldReader";}
 
-  explicit NemoFieldReader(eckit::PathName& filename);
+  NemoFieldReader(eckit::PathName& filename, bool readDate = true);
 
   std::vector<atlas::PointXY> read_locs();
   size_t read_dim_size(const std::string& name);
@@ -59,6 +59,7 @@ class NemoFieldReader : private util::ObjectCounter<NemoFieldReader> {
   std::vector<util::DateTime> datetimes_;
   std::string time_dimvar_name_;
   std::string z_dimvar_name_;
+  bool readDate;
 };
 }  // namespace orcamodel
 
