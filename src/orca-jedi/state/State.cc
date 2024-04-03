@@ -40,6 +40,7 @@
 #include "orca-jedi/increment/Increment.h"
 #include "orca-jedi/state/State.h"
 #include "orca-jedi/state/StateIOUtils.h"
+#include "orca-jedi/utilities/Types.h"
 
 #define NEMO_FILL_TOL 1e-6
 
@@ -71,7 +72,7 @@ State::State(const Geometry & geom,
   oops::Log::debug() << params_stream.str() << std::endl;
   oops::Log::trace() << "State(ORCA)::State:: time: " << validTime()
                      << std::endl;
-
+  geom_->log_status();
   setupStateFields();
 
   atlas::FieldSet maskFields = atlas::FieldSet();
@@ -117,6 +118,7 @@ State::State(const Geometry & geom,
 
 //  geom.set_hmask(maskFields[0]);
   
+  geom_->log_status();
   oops::Log::trace() << "State(ORCA)::State created." << std::endl;
 }
 
@@ -156,6 +158,27 @@ State::State(const State & other)
 State::~State() {
   oops::Log::trace() << "State(ORCA)::State destructed." << std::endl;
 }
+
+void State::subsetFieldSet(const oops::Variables & variables) {
+  atlas::FieldSet subset;
+  for (int iVar = 0; iVar < variables.size(); iVar++) {
+    auto variable = variables[iVar];
+    if (!stateFields_.has(variable)) {
+      throw eckit::BadValue("State(ORCA)::subsetFieldSet '"
+          + variable + "' does not appear in superset.");
+    }
+    subset.add(stateFields_[variable]);
+  }
+
+  stateFields_.clear();
+
+  for (int iVar = 0; iVar < variables.size(); iVar++) {
+    auto variable = variables[iVar];
+    stateFields_.add(subset[variable]);
+  }
+  vars_ = variables;
+}
+
 
 // Basic operators
 
@@ -237,9 +260,20 @@ void State::setupStateFields() {
     // add variable if it isn't already in stateFields
     std::vector<size_t> varSizes = geom_->variableSizes(vars_);
     if (!stateFields_.has(vars_[i])) {
-      stateFields_.add(geom_->functionSpace().createField<double>(
-           atlas::option::name(vars_[i]) |
-           atlas::option::levels(varSizes[i])));
+      const auto addField = [&](auto typeVal) {
+        using T = decltype(typeVal);
+        stateFields_.add(geom_->functionSpace().createField<T>(
+             atlas::option::name(vars_[i]) |
+             atlas::option::levels(varSizes[i])));
+        oops::Log::trace() << "State(ORCA)::setupStateFields : "
+                           << vars_[i] << "has dtype: "
+                           << (*(stateFields_.end()-1)).datatype().str() << std::endl;
+      };
+      ApplyForFieldType(addField,
+                        geom_->fieldPrecision(vars_[i]),
+                        std::string("State(ORCA)::setupStateFields ")
+                        + vars_[i] + "' field type not recognised");
+      geom_->log_status();
     }
   }
 }
@@ -299,14 +333,29 @@ void State::write(const eckit::Configuration & config) const {
 
 void State::print(std::ostream & os) const {
   oops::Log::trace() << "State(ORCA)::print starting" << std::endl;
+  geom_->log_status();
 
   os << std::endl << " Model state valid at time: " << validTime() << std::endl;
   os << std::string(4, ' ') << vars_ <<  std::endl;
   os << std::string(4, ' ') << "atlas field norms:" << std::endl;
   for (atlas::Field field : stateFields_) {
     std::string fieldName = field.name();
+    double norm_val = 0;
+    oops::Log::trace() << "State(ORCA)::print '" << fieldName << "' type "
+                       << field.datatype().str() << std::endl;
+
+    const auto addField = [&](auto typeVal) {
+      using T = decltype(typeVal);
+      norm_val = norm<T>(fieldName);
+    };
+
+    ApplyForFieldType(addField,
+                      geom_->fieldPrecision(fieldName),
+                      std::string("State(ORCA)::print '")
+                      + fieldName + "' field type not recognised");
+
     os << std::string(8, ' ') << fieldName << ": " << std::setprecision(5)
-       << norm(fieldName) << std::endl;
+       << norm_val << std::endl;
   }
 
   oops::Log::trace() << "State(ORCA)::print done" << std::endl;
@@ -317,49 +366,50 @@ void State::print(std::ostream & os) const {
 void State::zero() {
   oops::Log::trace() << "State(ORCA)::zero starting" << std::endl;
 
-//  auto ghost = atlas::array::make_view<int32_t, 1>(
-//      geom_->mesh().nodes().ghost());
+  auto ghost = atlas::array::make_view<int32_t, 1>(
+      geom_->mesh().nodes().ghost());
   for (atlas::Field field : stateFields_) {
     std::string fieldName = field.name();
     oops::Log::debug() << "orcamodel::State::zero:: field name = " << fieldName
                        << std::endl;
-    auto field_view = atlas::array::make_view<double, 2>(field);
-    for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
-      for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
-//        if (!ghost(j)) field_view(j, k) = 0;
-        field_view(j, k) = 0;
+
+    const auto zeroField = [&](auto typeVal) {
+      using T = decltype(typeVal);
+      auto field_view = atlas::array::make_view<T, 2>(field);
+      for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
+        for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
+          if (!ghost(j)) field_view(j, k) = 0;
+        }
       }
-    }
+    };
+
+    ApplyForFieldType(zeroField,
+                      geom_->fieldPrecision(fieldName),
+                      std::string("State(ORCA)::zero '")
+                      + fieldName + "' field type not recognised");
   }
 
   oops::Log::trace() << "State(ORCA)::zero done" << std::endl;
 }
 
-void State::accumul(const double & zz, const State & xx) {
-// add something
-
-  std::string err_message =
-      "orcamodel::State::accumul not implemented";
-  throw eckit::NotImplemented(err_message, Here());
-
-}
-
-double State::norm(const std::string & field_name) const {
-  auto field_view = atlas::array::make_view<double, 2>(
+template<class T> double State::norm(const std::string & field_name) const {
+  auto field_view = atlas::array::make_view<T, 2>(
       stateFields_[field_name]);
   auto ghost = atlas::array::make_view<int32_t, 1>(
       geom_->mesh().nodes().ghost());
   double squares = 0;
   double valid_points = 0;
   atlas_omp_parallel {
-    atlas::field::MissingValue mv(stateFields()[field_name]);
+    atlas::field::MissingValue mv(stateFields_[field_name]);
     bool has_mv = static_cast<bool>(mv);
     double squares_TP = 0;
     size_t valid_points_TP = 0;
-    atlas_omp_for(atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
+    atlas::idx_t num_h_locs = field_view.shape(0);
+    atlas::idx_t num_levels = field_view.shape(1);
+    atlas_omp_for(atlas::idx_t j = 0; j < num_h_locs; ++j) {
       if (!ghost(j)) {
-        for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
-          double pointValue = field_view(j, k);
+        for (atlas::idx_t k = 0; k < num_levels; ++k) {
+          T pointValue = field_view(j, k);
           if (!has_mv || (has_mv && !mv(pointValue))) {
             squares_TP += pointValue*pointValue;
             ++valid_points_TP;
@@ -372,14 +422,21 @@ double State::norm(const std::string & field_name) const {
         valid_points += valid_points_TP;
     }
   }
-  // prevent divide by zero when there are no valid model points on the
-  // partition
-  if (!valid_points)
-    return 0;
+  // Accumulate values across MPI ranks.
+  geom_->getComm().allReduceInPlace(squares, eckit::mpi::sum());
+  geom_->getComm().allReduceInPlace(valid_points, eckit::mpi::sum());
 
-  return sqrt(squares)/valid_points;
-}  
-  
+  if (valid_points) {
+    return sqrt(squares)/valid_points;
+  }
+
+  return 0;
+}
+
+template double State::norm<double>(const std::string & field_name) const;
+template double State::norm<float>(const std::string & field_name) const;
+
+
 void State::toFieldSet(atlas::FieldSet & fset) const {
   oops::Log::debug() << "State toFieldSet starting" << std::endl;
 
@@ -412,6 +469,15 @@ void State::toFieldSet(atlas::FieldSet & fset) const {
 
 atlas::Field State::getField(int i) const {
   return stateFields_[i];
-}
+  // serial distributions have the entire model grid on each MPI rank
+  if (geom_->distributionType() == "serial") {
+    double local_norm = 0;
+    // prevent divide by zero when there are no valid model points on this
+    // MPI rank
+    if (valid_points) {
+      local_norm = sqrt(squares)/valid_points;
+    }
+    return local_norm;
+  }
 
 }  // namespace orcamodel

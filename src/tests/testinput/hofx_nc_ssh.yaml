@@ -27,14 +27,10 @@ model :
   name: PseudoModel
   tstep: P1D
   states:
-    - date: 2021-06-28T23:00:00Z
-      nemo field file: Data/orca2_t_nemo.nc
-      variance field file: Data/orca2_t_bkg_var.nc
-      state variables: &state_variables [ sea_surface_height_anomaly ]
     - date: 2021-06-29T23:00:00Z
       nemo field file: Data/orca2_t_nemo.nc
       variance field file: Data/orca2_t_bkg_var.nc
-      state variables: *state_variables
+      state variables: &state_variables [ sea_surface_height_anomaly ]
     - date: 2021-06-30T23:00:00Z
       nemo field file: Data/orca2_t_nemo.nc
       variance field file: Data/orca2_t_bkg_var.nc
@@ -50,12 +46,12 @@ observations:
       obsdataout:
         engine:
           type: H5File
-          obsfile: testoutput/hofx_nc_sst_jopa.nc
+          obsfile: testoutput/hofx_nc_ssh_jopa.nc
       simulated variables: [seaSurfaceHeightAnomaly]
     get values:
       atlas-interpolator:
         type: unstructured-bilinear-lonlat
-        non_linear: missing-if-all-missing
+        non_linear: missing-if-all-missing-real32
     obs operator:
       name: Composite
       components:

@@ -9,7 +9,7 @@ JEDI model interface interface for the NEMO ocean model configurations on ORCA g
 
 ## Description
 
-_orca-jedi_ includes executables to calculate model values at observation locations and to perform quality control. _orca-jedi_ is a JEDI "psuedomodel", meaning that rather than interfacing directly with NEMO or NEMOVAR, the model state is derived from input files. Further applications may be developed based on _orca-jedi_ in the future. (These would be implementations of JEDI OOPS apps, such as for observation generation applications, and various DA applications).
+_orca-jedi_ includes executables to calculate model values at observation locations and to perform quality control. _orca-jedi_ is a JEDI "pseudo-model", meaning that rather than interfacing directly with NEMO or NEMOVAR, the model state is derived from input files. Further applications may be developed based on _orca-jedi_ in the future. (These would be implementations of JEDI OOPS apps, such as for observation generation applications, and various DA applications).
 
 ## Getting Started
 
@@ -71,7 +71,10 @@ OOPS_TRACE=true
 ## Authors
 
 The current lead maintainer is [@twsearle](https://github.com/twsearle) along with a large amount of help from Met Office contributors (see the "Contributors" page on github).
+## Contributing
+
+By contributing you agree to the Contributors License Agreement (CLA) contained in the root directory of the project. Please review this, and if you are able to make a contribution make an issue or pull request for your proposed change. All pull requests should conform to the working practises and be linked to an issue, unless a minor bug fix.
 
 ## Working practices
 
-Please see the [JEDI working principles](https://jointcenterforsatellitedataassimilation-jedi-docs.readthedocs-hosted.com/en/latest/working-practices/index.html) for current working practises. There are also templates for issues and PRs should you wish to contribute.
+Please see the [JEDI working principles](https://jointcenterforsatellitedataassimilation-jedi-docs.readthedocs-hosted.com/en/latest/working-practices/index.html) for current working practises.

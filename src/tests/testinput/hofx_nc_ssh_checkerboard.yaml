@@ -1,30 +1,24 @@
-# (C) British Crown Copyright 2024 Met Office
-
 forecast length : P2D
 time window:
   begin: 2021-06-28T23:00:00Z
   length: P2D
 geometry :
   nemo variables:
-    - name: ice_area_fraction
-      nemo field name: iiceconc
+    - name: sea_surface_height_anomaly
+      nemo field name: sossheig
       model space: surface
-    - name: sea_surface_temperature
-      nemo field name: votemper
-      model space: surface
-    - name: ice_area_fraction_background_error
-      nemo field name: sic_tot_var
-      model space: surface
-      variable type: background variance
-    - name: sea_surface_temperature_background_error
-      nemo field name: t_tot_var
+    - name: sea_surface_height_anomaly_background_error
+      nemo field name: ssh_tot_std
       model space: surface
       variable type: background variance
   grid name: ORCA2_T
   number levels: 1
+  partitioner: checkerboard
 initial condition :
   date: 2021-06-28T23:00:00Z
-  state variables: [ sea_surface_temperature, sea_surface_temperature_background_error ]
+  state variables:
+    - sea_surface_height_anomaly
+    - sea_surface_height_anomaly_background_error
   nemo field file: Data/orca2_t_nemo.nc
   variance field file: Data/orca2_t_bkg_var.nc
 model :
@@ -34,7 +28,7 @@ model :
     - date: 2021-06-29T23:00:00Z
       nemo field file: Data/orca2_t_nemo.nc
       variance field file: Data/orca2_t_bkg_var.nc
-      state variables: &state_variables [ sea_surface_temperature ]
+      state variables: &state_variables [ sea_surface_height_anomaly ]
     - date: 2021-06-30T23:00:00Z
       nemo field file: Data/orca2_t_nemo.nc
       variance field file: Data/orca2_t_bkg_var.nc
@@ -42,16 +36,16 @@ model :
 observations:
   observers:
   - obs space:
-      name: Sea Surface Temperature
+      name: Sea Surface Height
       obsdatain:
         engine:
           type: H5File
-          obsfile: Data/hofx_sst_obs.nc
+          obsfile: Data/hofx_ssh_obs.nc
       obsdataout:
         engine:
           type: H5File
-          obsfile: testoutput/hofx_nc_sst_jopa.nc
-      simulated variables: [seaSurfaceTemperature]
+          obsfile: testoutput/hofx_nc_ssh_checkerboard_jopa.nc
+      simulated variables: [seaSurfaceHeightAnomaly]
     get values:
       atlas-interpolator:
         type: unstructured-bilinear-lonlat
@@ -66,14 +60,15 @@ observations:
     obs filters:
     - filter: Variable Assignment
       assignments:
-      - name: GrossErrorProbability/seaSurfaceTemperature
+      - name: GrossErrorProbability/seaSurfaceHeightAnomaly
         type: float
         value: 0.04
     - filter: Bayesian Background Check
       observation alias file: testinput/test_name_map.yaml
       filter variables:
-      - name: seaSurfaceTemperature
+      - name: seaSurfaceHeightAnomaly
       prob density bad obs: 1.0
       PGE threshold: 0.5
 test:
-  reference filename: testoutput/test_hofx_nc_sst.ref
+  reference filename: testoutput/test_hofx_nc_ssh.ref
+  float absolute tolerance: 5.0e-7 # tolerance for MPI sum-order related differences

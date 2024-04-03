@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <memory>
 
 #include "atlas/field/Field.h"
 #include "atlas/field/FieldSet.h"
@@ -21,6 +22,7 @@
 #include "atlas/runtime/Log.h"
 
 #include "eckit/mpi/Comm.h"
+#include "eckit/log/Timer.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/ObjectCounter.h"
@@ -32,12 +34,12 @@
 #include "orca-jedi/nemovar/GeometryNV.h"
 
 #include "oops/util/Logger.h"
+#include "orca-jedi/utilities/Types.h"
 
 namespace atlas {
   class Field;
   class FieldSet;
   class Mesh;
-
 }
 
 namespace orcamodel {
@@ -85,6 +87,10 @@ class Geometry : public util::Printable {
 //    const F90geom& toFortran() const {return geom_->toFortran();}
 
 //  int nvgeom_avail_;          // DJL
+      return params_.partitioner.value();}
+  FieldDType fieldPrecision(std::string variable_name) const;
+  std::shared_ptr<eckit::Timer> timer() const {return eckit_timer_;}
+  void log_status() const;
 
  private:
   void print(std::ostream &) const;
@@ -102,6 +108,8 @@ class Geometry : public util::Printable {
     std::shared_ptr<nv::GeometryNV> nvgeom_;
 
 //    std::shared_ptr<GeometryF90> geom_;
+  atlas::FieldSet nofields_;
+  std::shared_ptr<eckit::Timer> eckit_timer_;
 };
 
 std::tuple<int, int> xypt(int jpt);
