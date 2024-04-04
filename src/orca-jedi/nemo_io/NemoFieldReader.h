@@ -26,7 +26,7 @@ class NemoFieldReader : private util::ObjectCounter<NemoFieldReader> {
  public:
   static const std::string classname() {return "orcamodel::NemoFieldReader";}
 
-  NemoFieldReader(eckit::PathName& filename, bool readDate = true);
+  explicit NemoFieldReader(const eckit::PathName& filename, bool readDate = true);
 
   void read_datetimes();
   std::vector<atlas::PointXY> read_locs() const;

@@ -110,7 +110,7 @@ template<> void fill_from_ncvar_as_type<float, float>(
 }
 }  // namespace
 
-NemoFieldReader::NemoFieldReader(eckit::PathName& filename, bool readDate)
+NemoFieldReader::NemoFieldReader(const eckit::PathName& filename, bool readDate)
   : ncFile(nullptr), datetimes_() {
   oops::Log::debug() << "orcamodel::NemoFieldReader::NemoFieldReader filename: "
                      << filename.fullName().asString() << std::endl;
@@ -391,61 +391,6 @@ template<typename T> std::vector<T> NemoFieldReader::read_var_slice(const std::s
       throw eckit::BadValue(err_stream.str(), Here());
     }
 
-    return var_data;
-  } catch(netCDF::exceptions::NcException& e)
-  {
-    std::ostringstream err_stream;
-    err_stream << "orcamodel::NemoFieldReader::read_surf_var varname: "
-               << varname << " NetCDF exception: " << std::endl << e.what();
-    throw eckit::ReadError(err_stream.str(), Here());
-  }
-}
-
-  void NemoFieldReader::read_volume_var(const std::string& varname,
-    const size_t t_indx, atlas::array::ArrayView<double, 2>& field_view) {
-  oops::Log::trace() << "orcamodel::NemoFieldReader::read_volume_var"
-                     << std::endl;
-  try {
-    size_t nx = read_dim_size("x");
-    size_t ny = read_dim_size("y");
-    size_t nz = read_dim_size(z_dimvar_name_);
-    size_t nlevels = field_view.shape(1);
-
-  oops::Log::debug() << "orcamodel::NemoFieldReader::read_volume var: "   // DJL
-                     << " nx ny nz nlevels " << nx         // DJL
-                     << " " << ny    // DJL
-                     << " " << nz    // DJL
-                     << " " << nlevels  // DJL
-                     << " t_indx " << t_indx    // DJL 
-                     << std::endl;          // DJL
-                     
-    if (field_view.shape(0) != nx*ny) {
-      std::ostringstream err_stream;
-      err_stream << "orcamodel::NemoFieldReader::read_volume_var field_view 1st"
-                 << " dimension does not match horizontal dimensions"
-                 << " for varname " << varname;
-      throw eckit::BadValue(err_stream.str(), Here());
-    }
-
-    if (nlevels > nz) {
-      std::ostringstream err_stream;
-      err_stream << "orcamodel::NemoFieldReader::read_volume_var field_view 2nd"
-                 << " dimension " << nlevels << " is larger than NetCDF file"
-                 << " z dimension " << nz << " for varname " << varname;
-      throw eckit::BadValue(err_stream.str(), Here());
-    }
-
-    oops::Log::debug() << "orcamodel::NemoFieldReader::read_volume a varname " << varname << std::endl;   // DJL
-
-    netCDF::NcVar nc_var = ncFile->getVar(varname);
-    if (nc_var.isNull()) {
-      std::ostringstream err_stream;
-      err_stream << "orcamodel::NemoFieldReader::read_volume_var ncVar '"
-                 << varname << "' is not present in NetCDF file";
-      throw eckit::BadValue(err_stream.str(), Here());
-    }
-
-    std::vector<double> buffer(nx*ny*nlevels);
     std::vector<T> var_data(nx*ny);
 
     std::string nc_type_name = nc_var.getType().getName();

@@ -360,10 +360,6 @@ const bool Geometry::variable_in_variable_type(std::string variable_name,
   throw eckit::BadValue(err_stream.str(), Here());
 }
 
-void Geometry::print(std::ostream & os) const {
-  os << "Not Implemented";
-}
-
 // Determine x,y location from jpt
 // DJL hardwired to orca2 needs generalising
 std::tuple<int, int> xypt(int jpt) { int xwid=182; int y = jpt / xwid; int x = jpt - y*xwid; return std::make_tuple(x,y); } 

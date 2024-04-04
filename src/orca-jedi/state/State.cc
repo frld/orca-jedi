@@ -392,6 +392,15 @@ void State::zero() {
   oops::Log::trace() << "State(ORCA)::zero done" << std::endl;
 }
 
+void State::accumul(const double & zz, const State & xx) {
+// add something
+
+  std::string err_message =
+      "orcamodel::State::accumul not implemented";
+  throw eckit::NotImplemented(err_message, Here());
+
+}
+
 template<class T> double State::norm(const std::string & field_name) const {
   auto field_view = atlas::array::make_view<T, 2>(
       stateFields_[field_name]);
@@ -422,6 +431,19 @@ template<class T> double State::norm(const std::string & field_name) const {
         valid_points += valid_points_TP;
     }
   }
+  
+  // serial distributions have the entire model grid on each MPI rank
+  if (geom_->distributionType() == "serial") {
+    double local_norm = 0;
+    // prevent divide by zero when there are no valid model points on this
+    // MPI rank
+    if (valid_points) {
+      local_norm = sqrt(squares)/valid_points;
+    }
+    return local_norm;
+  }
+
+  
   // Accumulate values across MPI ranks.
   geom_->getComm().allReduceInPlace(squares, eckit::mpi::sum());
   geom_->getComm().allReduceInPlace(valid_points, eckit::mpi::sum());
@@ -466,18 +488,9 @@ void State::toFieldSet(atlas::FieldSet & fset) const {
   oops::Log::debug() << "State toFieldSet done" << std::endl;
 }
 
-
 atlas::Field State::getField(int i) const {
   return stateFields_[i];
-  // serial distributions have the entire model grid on each MPI rank
-  if (geom_->distributionType() == "serial") {
-    double local_norm = 0;
-    // prevent divide by zero when there are no valid model points on this
-    // MPI rank
-    if (valid_points) {
-      local_norm = sqrt(squares)/valid_points;
-    }
-    return local_norm;
   }
+
 
 }  // namespace orcamodel

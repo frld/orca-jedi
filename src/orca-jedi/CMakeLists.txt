@@ -69,6 +69,8 @@ nemo_io/WriteServer.cc
 utilities/OrcaModelTraits.h
 utilities/Types.h
 utilities/Types.cc
+utilities/ModelData.h
+utilities/ModelData.cc
 variablechanges/VariableChangeParameters.h
 variablechanges/VariableChange.h
 variablechanges/LinearVariableChange.h

@@ -74,7 +74,7 @@ class Geometry : public util::Printable {
     std::string variable_type) const;
   bool levelsAreTopDown() const {return true;}
   std::string distributionType() const {
-      return params_.partitioner.value().value_or("serial");}
+      return params_.partitioner.value();}
   void set_gmask(atlas::Field &) const;
 //  void set_hmask(atlas::Field &) const;
 ////  const nv::GeometryNV & getNVgeometry() const {return nvgeom_;}
@@ -87,7 +87,7 @@ class Geometry : public util::Printable {
 //    const F90geom& toFortran() const {return geom_->toFortran();}
 
 //  int nvgeom_avail_;          // DJL
-      return params_.partitioner.value();}
+      
   FieldDType fieldPrecision(std::string variable_name) const;
   std::shared_ptr<eckit::Timer> timer() const {return eckit_timer_;}
   void log_status() const;
@@ -103,9 +103,9 @@ class Geometry : public util::Printable {
   atlas::grid::Partitioner partitioner_;
   atlas::Mesh mesh_;
   atlas::functionspace::NodeColumns funcSpace_;
-    atlas::FieldSet extraFields_;
+  atlas::FieldSet extraFields_;
 //  nv::GeometryNV nvgeometry_;    // nv::GeometryNV DJL?
-    std::shared_ptr<nv::GeometryNV> nvgeom_;
+  std::shared_ptr<nv::GeometryNV> nvgeom_;
 
 //    std::shared_ptr<GeometryF90> geom_;
   atlas::FieldSet nofields_;

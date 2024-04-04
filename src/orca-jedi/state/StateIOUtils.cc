@@ -33,23 +33,22 @@ void readFieldsFromFile(
 
     // Open Nemo Field file
     std::string nemo_file_name;
-    bool skip = false;
     bool readDate = true;
     if (variable_type == "background") {
       nemo_file_name = params.nemoFieldFile.value();
     }
     if (variable_type == "background variance") {
       nemo_file_name = params.varianceFieldFile.value().value_or("");
-      if (nemo_file_name == "") {skip = true;}
+      if (nemo_file_name == "") {return;}
     }
     if (variable_type == "mask") {
       nemo_file_name = params.maskFieldFile.value().value_or("");
-      if (nemo_file_name == "") {skip = true;}
+      if (nemo_file_name == "") {return;}
       readDate = false;
     }
 
     auto nemo_field_path = eckit::PathName(nemo_file_name);
-    oops::Log::debug() << "orcamodel::readFieldsFromFile:: nemo_field_path "
+    oops::Log::debug() << "orcamodel::readFieldsFromFile:: "
                        << nemo_field_path << std::endl;
     ReadServer nemo_reader(geom.timer(), nemo_field_path, geom.mesh());
 
@@ -93,6 +92,10 @@ void readFieldsFromFile(
       }
     }
 
+    oops::Log::trace() << "orcamodel::readFieldsFromFile:: readFieldsFromFile "
+                       << "done" << std::endl;
+}
+
 void writeIncFieldsToFile(
   const eckit::Configuration & conf,
   const Geometry & geom,
@@ -118,11 +121,6 @@ void writeIncFieldsToFile(
     writeGenFieldsToFile(nemo_field_path, geom, valid_date, fs);
 }
 
-void writeGenFieldsToFile(
-  const std::string nemo_field_path,
-    oops::Log::trace() << "orcamodel::readFieldsFromFile:: readFieldsFromFile "
-                       << "done" << std::endl;
-}
 
 /// \brief Populate a single atlas field using the read server.
 /// \param nemo_name The netCDF name of the variable to read.
@@ -168,6 +166,38 @@ void writeFieldsToFile(
     oops::Log::trace() << "orcamodel::writeGenFieldsToFile:: start for valid_date"
                        << " " << valid_date << std::endl;
 
+    std::string output_filename =
+      params.outputNemoFieldFile.value().value_or("");
+    if (output_filename == "")
+      throw eckit::BadValue(std::string("orcamodel::writeFieldsToFile:: ")
+          + "file name not specified", Here());
+
+/*    std::map<std::string, std::string> varCoordTypeMap;
+    {
+      const oops::Variables vars = geom.variables();
+      const std::vector<std::string> coordSpaces =
+        geom.variableNemoSpaces(vars);
+      for (size_t i=0; i < vars.size(); ++i)
+        varCoordTypeMap[vars[i]] = coordSpaces[i];
+    }
+*/
+
+    auto nemo_field_path = eckit::PathName(output_filename);
+    oops::Log::debug() << "orcamodel::writeFieldsToFile:: "
+                       << nemo_field_path << std::endl;
+
+    writeGenFieldsToFile(nemo_field_path, geom, valid_date, fs);
+
+}
+
+void writeGenFieldsToFile(
+  const std::string nemo_field_path,
+  const Geometry & geom,
+  const util::DateTime & valid_date,
+  const atlas::FieldSet & fs) {
+    oops::Log::trace() << "orcamodel::writeGenFieldsToFile:: start for valid_date"
+                       << " " << valid_date << std::endl;
+
     std::map<std::string, std::string> varCoordTypeMap;
     {
       const oops::Variables vars = geom.variables();
@@ -201,7 +231,7 @@ void writeFieldsToFile(
       };
       ApplyForFieldType(write,
                         geom.fieldPrecision(fieldName),
-                        std::string("State(ORCA)::writeFieldsToFile '")
+                        std::string("State(ORCA)::writeGenFieldsToFile '")
                           + nemoName + "' field type not recognised.");
     }
 }
