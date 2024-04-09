@@ -46,7 +46,8 @@ class WriteServer {
 
  private:
   void log_status() const {
-    oops::Log::trace() << "orcamodel::log_status " << eckit_timer_->elapsed() << " "
+//    oops::Log::trace() << "orcamodel::log_status " << eckit_timer_->elapsed() << " "
+    oops::Log::trace() << "orcamodel::log_status "
         << static_cast<double>(eckit::system::ResourceUsage().maxResidentSetSize()) / 1.0e+9
         << " Gb" << std::endl;
   }

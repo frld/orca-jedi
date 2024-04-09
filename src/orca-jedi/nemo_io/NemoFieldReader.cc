@@ -95,6 +95,14 @@ template void fill_from_ncvar_as_type<int64_t, float>(
     const netCDF::NcVar nc_var,
     const std::vector<size_t>& sizes, const std::vector<size_t>& counts,
     std::vector<float>& result);
+template void fill_from_ncvar_as_type<uint8_t, double>(
+    const netCDF::NcVar nc_var,
+    const std::vector<size_t>& sizes, const std::vector<size_t>& counts,
+    std::vector<double>& result);
+template void fill_from_ncvar_as_type<uint8_t, float>(
+    const netCDF::NcVar nc_var,
+    const std::vector<size_t>& sizes, const std::vector<size_t>& counts,
+    std::vector<float>& result);
 
 template<> void fill_from_ncvar_as_type<double, double>(
     const netCDF::NcVar nc_var,
@@ -402,6 +410,8 @@ template<typename T> std::vector<T> NemoFieldReader::read_var_slice(const std::s
         fill_from_ncvar_as_type<int, T>(nc_var, starts, counts, var_data);
     } else if (nc_type_name == "int64") {
         fill_from_ncvar_as_type<int64_t, T>(nc_var, starts, counts, var_data);
+    } else if (nc_type_name == "byte") {
+        fill_from_ncvar_as_type<uint8_t, T>(nc_var, starts, counts, var_data);
     } else {
         std::ostringstream err_stream;
         err_stream << "orcamodel::NemoFieldReader::read_var_slice ncVar '"
@@ -474,6 +484,8 @@ template<typename T> std::vector<T> NemoFieldReader::read_vertical_var(
         fill_from_ncvar_as_type<int, T>(nc_var, starts, counts, buffer);
     } else if (nc_type_name == "int64") {
         fill_from_ncvar_as_type<int64_t, T>(nc_var, starts, counts, buffer);
+    } else if (nc_type_name == "byte") {
+        fill_from_ncvar_as_type<uint8_t, T>(nc_var, starts, counts, buffer);
     } else {
         std::ostringstream err_stream;
         err_stream << "orcamodel::NemoFieldReader::read_vertical_var ncVar '"

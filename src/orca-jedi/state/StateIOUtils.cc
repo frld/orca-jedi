@@ -50,12 +50,17 @@ void readFieldsFromFile(
     auto nemo_field_path = eckit::PathName(nemo_file_name);
     oops::Log::debug() << "orcamodel::readFieldsFromFile:: "
                        << nemo_field_path << std::endl;
-    ReadServer nemo_reader(geom.timer(), nemo_field_path, geom.mesh());
+    ReadServer nemo_reader(geom.timer(), nemo_field_path, geom.mesh(), readDate);
 
     // Read fields from Nemo field file
     // field names in the atlas fieldset are assumed to match their names in
     // the field file
-    const size_t time_indx = nemo_reader.get_nearest_datetime_index(valid_date);
+    size_t time_indx;
+    if (readDate == true) {
+      time_indx = nemo_reader.get_nearest_datetime_index(valid_date);
+    } else {
+      time_indx = 0;
+    }
     oops::Log::debug() << "orcamodel::readFieldsFromFile:: time_indx "
                        << time_indx << std::endl;
 
@@ -67,8 +72,33 @@ void readFieldsFromFile(
       for (size_t i = 0; i < vars.size(); ++i)
         varCoordTypeMap[vars[i]] = coordSpaces[i];
     }
+
+    oops::Log::debug() << "DJL orcamodel::readFieldsFromFile:: variable_type "
+                       << variable_type << std::endl;
+    
+    if (variable_type == "mask") {
+
+      oops::Log::debug() << "DJL orcamodel::readFieldsFromFile mask" << std::endl;
+
+      for (atlas::Field field : fs) {
+
+        const auto populate = [&](auto typeVal) {
+          using T = decltype(typeVal);
+          populateField<T>("tmask", "volume",
+                                time_indx, nemo_reader, field);
+        };
+        ApplyForFieldType(populate,
+                          FieldDType::Double,
+                          std::string("State(ORCA)::readFieldsFromFile ")
+                            + "tmask field type not recognised");
+
+      }
+    }
+    else
+    {
     for (atlas::Field field : fs) {
       std::string fieldName = field.name();
+      oops::Log::debug() << "DJL orcamodel::readFieldsFromFile regular fieldName " << fieldName << std::endl;
       std::string nemoName = geom.nemo_var_name(fieldName);
       oops::Log::debug() << "orcamodel::readFieldsFromFile:: "
                          << "geom.variable_in_variable_type(\""
@@ -90,6 +120,7 @@ void readFieldsFromFile(
         geom.functionSpace().haloExchange(field);
         geom.log_status();
       }
+    }
     }
 
     oops::Log::trace() << "orcamodel::readFieldsFromFile:: readFieldsFromFile "
@@ -163,7 +194,7 @@ void writeFieldsToFile(
   const Geometry & geom,
   const util::DateTime & valid_date,
   const atlas::FieldSet & fs) {
-    oops::Log::trace() << "orcamodel::writeGenFieldsToFile:: start for valid_date"
+    oops::Log::trace() << "orcamodel::writeFieldsToFile:: start for valid_date"
                        << " " << valid_date << std::endl;
 
     std::string output_filename =
@@ -218,6 +249,7 @@ void writeGenFieldsToFile(
                        geom.distributionType() == "serial");
     for (atlas::Field field : fs) {
       std::string fieldName = field.name();
+      oops::Log::debug() << "DJL orcamodel::writeGenFieldsToFile fieldName " << fieldName << std::endl;
       std::string nemoName = geom.nemo_var_name(fieldName);
       const auto write = [&](auto typeVal) {
           using T = decltype(typeVal);

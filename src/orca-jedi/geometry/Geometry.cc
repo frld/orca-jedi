@@ -72,7 +72,7 @@ Geometry::Geometry(const eckit::Configuration & config,
     funcSpace_ = atlas::functionspace::NodeColumns(
         mesh_, atlas::option::halo(halo));
 
-    oops::Log::debug() << "Looking at setting up orca-jedi nemovar geometry DJL" << std::endl;         // DJL
+    oops::Log::debug() << "Checking if we want to also set up orca-jedi nemovar geometry DJL usenemovar_ ="  << usenemovar_ << std::endl;         // DJL
     if (usenemovar_) {
        oops::Log::debug() << "Now setting up orca-jedi nemovar geometry DJL" << std::endl;         // DJL
        nvgeom_.reset(new nv::GeometryNV(config));
@@ -198,6 +198,8 @@ Geometry::Geometry(const eckit::Configuration & config,
 //    oops::Log::debug() << "Finished trying to grab the nvgeometry back DJL" << std::endl;         // DJL
     
     log_status();
+    
+    oops::Log::debug() << "Geometry setup complete DJL " << std::endl;         // DJL
 }
 
 // -----------------------------------------------------------------------------
@@ -231,11 +233,11 @@ const std::string Geometry::nemo_var_name(const std::string std_name) const {
   for (const auto & nemoField : params_.nemoFields.value()) {
     if (std_name == nemoField.name.value()) return nemoField.nemoName.value();
   }
-  return std_name; // DJL
-  std::stringstream err_stream;
-  err_stream << "orcamodel::Geometry::nemo_var_name variable name \" ";
-  err_stream << "\" " << std_name << " not recognised. " << std::endl;
-  throw eckit::BadValue(err_stream.str(), Here());
+  return std_name; // DJL will return the standard name if there is no matching nemoName
+//  std::stringstream err_stream;
+//  err_stream << "orcamodel::Geometry::nemo_var_name variable name \" ";
+//  err_stream << "\" " << std_name << " not recognised. " << std::endl;
+//  throw eckit::BadValue(err_stream.str(), Here());
 }
 
 // -----------------------------------------------------------------------------
@@ -435,11 +437,11 @@ FieldDType Geometry::fieldPrecision(std::string variable_name) const {
        return nemoField.fieldPrecision.value();
     }
   }
-
-  std::stringstream err_stream;
-  err_stream << "orcamodel::Geometry::fieldPrecision variable name ";
-  err_stream << "\"" << variable_name << "\" not recognised. " << std::endl;
-  throw eckit::BadValue(err_stream.str(), Here());
+  return FieldDType::Double;  // DJL defaulting to double if there isn't a nemoField precision value set
+//  std::stringstream err_stream;
+//  err_stream << "orcamodel::Geometry::fieldPrecision variable name ";
+//  err_stream << "\"" << variable_name << "\" not recognised. " << std::endl;
+//  throw eckit::BadValue(err_stream.str(), Here());
 }
 
 void Geometry::print(std::ostream & os) const {
@@ -447,9 +449,13 @@ void Geometry::print(std::ostream & os) const {
 }
 
 void Geometry::log_status() const {
-  oops::Log::trace() << "orcamodel::log_status " << eckit_timer_->elapsed() << " "
-      << static_cast<double>(eckit::system::ResourceUsage().maxResidentSetSize()) / 1.0e+9
-      << " Gb" << std::endl;
+  oops::Log::trace() << "DJL log statusing" << std::endl;
+  oops::Log::trace() << "DJL " << eckit::system::ResourceUsage().maxResidentSetSize() << std::endl;
+//  oops::Log::trace() << "DJL " << eckit_timer_->elapsed() << std::endl;   // causing a failure
+//  oops::Log::trace() << "DJL" << std::endl;
+//  oops::Log::trace() << "orcamodel::log_status " << eckit_timer_->elapsed() << " "
+//      << static_cast<double>(eckit::system::ResourceUsage().maxResidentSetSize()) / 1.0e+9
+//      << " Gb" << std::endl;
 }
 
 }  // namespace orcamodel

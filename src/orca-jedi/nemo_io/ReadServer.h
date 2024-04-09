@@ -28,6 +28,10 @@ class ReadServer {
   explicit ReadServer(std::shared_ptr<eckit::Timer> eckit_timer,
       const eckit::PathName& file_path,
       const atlas::Mesh& mesh);
+  explicit ReadServer(std::shared_ptr<eckit::Timer> eckit_timer,
+      const eckit::PathName& file_path,
+      const atlas::Mesh& mesh,
+      bool readDate);
   ReadServer(ReadServer &&) = default;
   ReadServer(const ReadServer &) = default;
   ReadServer &operator=(ReadServer &&) = default;
@@ -42,7 +46,8 @@ class ReadServer {
 
  private:
 void log_status() const {
-  oops::Log::trace() << "orcamodel::log_status " << eckit_timer_->elapsed() << " "
+//  oops::Log::trace() << "orcamodel::log_status " << eckit_timer_->elapsed() << " "
+    oops::Log::trace() << "orcamodel::log_status "
       << static_cast<double>(eckit::system::ResourceUsage().maxResidentSetSize()) / 1.0e+9
       << " Gb" << std::endl;
 }

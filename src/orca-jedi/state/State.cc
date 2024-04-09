@@ -72,9 +72,13 @@ State::State(const Geometry & geom,
   oops::Log::debug() << params_stream.str() << std::endl;
   oops::Log::trace() << "State(ORCA)::State:: time: " << validTime()
                      << std::endl;
+  oops::Log::trace() << "DJL State(ORCA):: log_status " << std::endl;
   geom_->log_status();
+
+  oops::Log::trace() << "DJL State(ORCA):: setupStateFields " << std::endl;
   setupStateFields();
 
+  oops::Log::trace() << "DJL State(ORCA):: setup mask " << std::endl;
   atlas::FieldSet maskFields = atlas::FieldSet();
   std::vector<size_t> varSizes = geom_->variableSizes(vars_);
   maskFields.add(geom_->functionSpace().createField<double>(
@@ -90,12 +94,22 @@ State::State(const Geometry & geom,
 //    }
 
   if (params_.analyticInit.value().value_or(false)) {
+    oops::Log::trace() << "DJL State(ORCA):: analytic_init " << std::endl;
     this->analytic_init(*geom_);
   } else {
+
+  oops::Log::trace() << "DJL State(ORCA)::reading background " << std::endl;
+
     readFieldsFromFile(params_, *geom_, validTime(), "background",
        stateFields_);
+
+  oops::Log::trace() << "DJL State(ORCA)::reading background variance " << std::endl;
+
     readFieldsFromFile(params_, *geom_, validTime(), "background variance",
        stateFields_);
+
+  oops::Log::trace() << "DJL State(ORCA)::reading mask " << std::endl;
+
     readFieldsFromFile(params_, *geom_, validTime(), "mask",
        maskFields);
   }
@@ -296,7 +310,8 @@ void State::applyMaskToStateFields(atlas::FieldSet & maskFields) {
   auto mask_view = atlas::array::make_view<double, 2>(mask);
 
   for (atlas::Field field : stateFields_) {
-    oops::Log::debug() << "State(ORCA)::applyMaskToStateFields " << field.name() << std::endl;
+    std::string fieldName = field.name();
+    oops::Log::debug() << "State(ORCA)::applyMaskToStateFields " << fieldName << std::endl;
     double missing_value;
     if (field.metadata().has("missing_value")) {
       missing_value = field.metadata().get<double>("missing_value");
@@ -307,15 +322,25 @@ void State::applyMaskToStateFields(atlas::FieldSet & maskFields) {
       field.metadata().set("missing_value_epsilon", NEMO_FILL_TOL);
     }
     oops::Log::debug() << "State(ORCA)::applyMaskToStateFields missing_value " << missing_value << std::endl;    
-    auto field_view = atlas::array::make_view<double, 2>(field);
-    for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
-      for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
-//        oops::Log::debug() << mask_view(j, k) << " ";    // DJL
-        if (mask_view(j, k) == 0) {
-          field_view(j, k) = missing_value;
+
+    const auto Field = [&](auto typeVal) {
+      using T = decltype(typeVal);
+      auto field_view = atlas::array::make_view<T, 2>(field);
+      for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
+        for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
+//          if (!ghost(j)) field_view(j, k) = 0;
+          if (mask_view(j, k) == 0) {
+            field_view(j, k) = missing_value;
+          }
         }
       }
-    }
+    };
+
+    ApplyForFieldType(Field,
+                      geom_->fieldPrecision(fieldName),
+                      std::string("State(ORCA)::applyMaskToStateFields '")
+                      + fieldName + "' field type not recognised");
+
 //    oops::Log::debug() << std::endl;  // DJL
         
   }

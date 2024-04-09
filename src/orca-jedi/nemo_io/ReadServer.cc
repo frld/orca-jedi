@@ -26,6 +26,16 @@ ReadServer::ReadServer(std::shared_ptr<eckit::Timer> eckit_timer,
   }
 }
 
+ReadServer::ReadServer(std::shared_ptr<eckit::Timer> eckit_timer,
+  const eckit::PathName& file_path, const atlas::Mesh& mesh, bool readDate) :
+  mesh_(mesh),
+  orca_buffer_indices_(mesh),
+  eckit_timer_(eckit_timer) {
+  if (myrank == mpiroot) {
+    reader_ = std::make_unique<NemoFieldReader>(file_path, readDate);
+  }
+}
+
 /// \brief Read in a 2D horizontal slice of variable data on the root processor only
 /// \param var_name
 /// \param t_index Index of the time slice.
@@ -92,6 +102,7 @@ template<class T> void ReadServer::fill_field(const std::vector<T>& buffer,
       const int64_t ibuf = orca_buffer_indices_(ij(inode, 0), ij(inode, 1));
       field_view(inode, z_index) = buffer[ibuf];
     }
+    oops::Log::trace() << "State(ORCA)::nemo_io::ReadServer::fill_field complete DJL" << std::endl;
 }
 
 template void ReadServer::fill_field<double>(
