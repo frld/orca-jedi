@@ -51,7 +51,7 @@ Increment::Increment(const Geometry & geom,
 
   setupIncrementFields();
   
-  zero();   // DJL needed?
+  this->zero();   // DJL needed?
 
   oops::Log::debug() << "Increment(ORCA)::Increment created for "<< validTime()
                      << std::endl;
@@ -87,8 +87,21 @@ Increment::Increment(const Increment & other, const bool copy)
   setupIncrementFields();
 
   if (copy) {
+
+  for (size_t i=0; i < vars_.size(); ++i) {
+
+    // copy variable from _Fields to new field set
+    atlas::Field field = other.incrementFields_[i];
+    oops::Log::debug() << "Copying increment field " << field.name() << std::endl;
+    incrementFields_->add(field);
+
+  }
+  
+  }
+
+
   // copy from other to incrementFields
-    auto ghost = atlas::array::make_view<int32_t, 1>(
+/*    auto ghost = atlas::array::make_view<int32_t, 1>(
         geom_->mesh().nodes().ghost());
     for (int i = 0; i< other.incrementFields_.size();i++)
     {
@@ -112,7 +125,7 @@ Increment::Increment(const Increment & other, const bool copy)
       oops::Log::debug() << "DJL value " << jpt << " from " << field_view1(jpt, 0) << " to " << field_view(jpt, 0) << std::endl;
 
     }
-  }  
+*/
   
 //  int xpt = 91;  int ypt = 49;  
   
@@ -290,22 +303,47 @@ void Increment::diff(const State & x1, const State & x2) {
   }
 
 }
-  
-void Increment::zero() {
+
+void Increment::setval(const double & val) {
+  oops::Log::trace() << "Increment(ORCA)::setval starting" << std::endl;
+
   auto ghost = atlas::array::make_view<int32_t, 1>(
       geom_->mesh().nodes().ghost());
   for (atlas::Field field : incrementFields_) {
     std::string fieldName = field.name();
-    oops::Log::debug() << "orcamodel::Increment::zero:: field name = " << fieldName
+    oops::Log::debug() << "orcamodel::Increment::setval:: field name = " << fieldName
+                       << "value " << val
                        << std::endl;
+
     auto field_view = atlas::array::make_view<double, 2>(field);
     for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
       for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
-//        if (!ghost(j)) field_view(j, k) = 0;
-        field_view(j, k) = 0;
+//          if (!ghost(j)) field_view(j, k) = 0;
+        field_view(j, k) = val;
       }
     }
   }
+
+  oops::Log::trace() << "Increment(ORCA)::setval done" << std::endl;
+}
+
+void Increment::zero() {
+
+  oops::Log::trace() << "Increment(ORCA)::zero starting" << std::endl;
+
+  this->setval(0);
+
+  oops::Log::trace() << "Increment(ORCA)::zero done" << std::endl;
+  
+}
+
+void Increment::ones() {
+
+  oops::Log::trace() << "Increment(ORCA)::ones starting" << std::endl;
+  
+  this->setval(1);
+
+  oops::Log::trace() << "Increment(ORCA)::ones done" << std::endl;
   
 }
   
@@ -314,9 +352,12 @@ void Increment::zero(const util::DateTime & vt) {
 
   oops::Log::debug() << "orcamodel::Increment::zero time " << vt << std::endl;
 
-  Increment::zero();
+//  Increment::zero();
+  this->zero();
 }
 
+
+/*
 void Increment::ones() {
   auto ghost = atlas::array::make_view<int32_t, 1>(
       geom_->mesh().nodes().ghost());
@@ -334,6 +375,9 @@ void Increment::ones() {
   }
 
 }
+*/
+
+
 
 void Increment::axpy(const double & zz, const Increment & dx, const bool check) {
   ASSERT(!check || this->validTime() == dx.validTime());
@@ -453,7 +497,8 @@ void Increment::dirac(const eckit::Configuration & conf) {
 // DJL this is 30S, 100W in orca2 (-30N, 260E)
 //  int xpt = 91;  int ypt = 49; 
 
-// DJL hardwired to work with orca2    
+// DJL hardwired to fixed point on the orca2 grid
+// should be made more flexible in future    
   int jpt = ypt*182 + xpt;
   int kpt = 0; 
 
@@ -462,10 +507,12 @@ void Increment::dirac(const eckit::Configuration & conf) {
 
   auto ghost = atlas::array::make_view<int32_t, 1>(
       geom_->mesh().nodes().ghost());
+
   for (atlas::Field field : incrementFields_) {
     std::string fieldName = field.name();
     oops::Log::debug() << "orcamodel::Increment::dirac:: field name = " << fieldName
                        << std::endl;
+
     auto field_view = atlas::array::make_view<double, 2>(field);
     for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
       for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
@@ -480,6 +527,7 @@ void Increment::dirac(const eckit::Configuration & conf) {
         }
       }
     }
+    
   }
 
 }
@@ -513,9 +561,10 @@ void Increment::toFieldSet(atlas::FieldSet & fset) const {
 //    }
     // copy variable from increments to new field set
     atlas::Field fieldinc = incrementFields_[i];
-    oops::Log::debug() << "Copy increment toFieldSet " << fieldinc.name() << std::endl;
+    std::string fieldName = fieldinc.name();
+    oops::Log::debug() << "Copy increment toFieldSet " << fieldName << std::endl;
 
-// debugging output    
+// debugging output  
     auto field_view = atlas::array::make_view<double, 2>(fieldinc);
 //    int xpt = 91;  int ypt = 49;  
 //    int jpt = ypt*182 + xpt;  // DJL hardwired to work with orca2  
@@ -540,12 +589,6 @@ void Increment::toFieldSet(atlas::FieldSet & fset) const {
 // ------------------------------------------------------------------------------------------------
 void Increment::toFieldSetAD(const atlas::FieldSet & fset) {
   oops::Log::debug() << "Increment toFieldSetAD starting" << std::endl;
-
-//
-//  lfricjedi_increment_to_fieldset_ad_f90(keyInc_,
-//                                         geom_->toFortran(),
-//                                         vars_,
-//                                         fset.get());
 
   std::string err_message =
       "orcamodel::Increment::toFieldSetAD not implemented";
@@ -599,7 +642,6 @@ void Increment::fromFieldSet(const atlas::FieldSet & fset) {
 
 
 void Increment::setupIncrementFields() {
-  oops::Log::debug() << "orcamodel::Increment::setupIncrementFields vars_.size() " << vars_.size() << std::endl;
   for (size_t i=0; i < vars_.size(); ++i) {
     // add variable if it isn't already in incrementFields
     std::vector<size_t> varSizes = geom_->variableSizes(vars_);
@@ -607,9 +649,14 @@ void Increment::setupIncrementFields() {
       incrementFields_.add(geom_->functionSpace().createField<double>(
            atlas::option::name(vars_[i]) |
            atlas::option::levels(varSizes[i])));
+      oops::Log::trace() << "Increment(ORCA)::setupIncrementFields : "
+                         << vars_[i] << "has dtype: "
+                         << (*(incrementFields_.end()-1)).datatype().str() << std::endl;
+      geom_->log_status();
     }
   }
 }
+
 
 /// I/O and diagnostics
 void Increment::read(const eckit::Configuration & conf) {
@@ -631,7 +678,14 @@ void Increment::write(const eckit::Configuration & conf) const {
     std::string fieldName = field.name();
     oops::Log::debug() << "orcamodel::Increment::write:: field name = " << fieldName
                        << std::endl;
+
     auto field_view = atlas::array::make_view<double, 2>(field);
+//    int xpt = 141;  int ypt = 73;  
+    int xpt = 91; int ypt = 49;
+    int jpt = ypt*182 + xpt;  // DJL hardwired to work with orca2  
+    oops::Log::debug() << "DJL value " << jpt << " " << field_view(jpt-1, 0) << " " << field_view(jpt, 0) << " " << field_view(jpt+1, 0) << std::endl;
+
+//    auto field_view = atlas::array::make_view<double, 2>(field);
     
 //    oops::Log::debug() << std::endl << "Increment::write DJL ";
 //    for (int i=996; i < 1005; ++i) {
@@ -666,18 +720,18 @@ void Increment::print(std::ostream & os) const {
   oops::Log::trace() << "Increment(ORCA)::print done" << std::endl;
 }
 
-std::tuple<double, double, double> Increment::stats(const std::string & field_name) const {
+std::tuple<double, double, double> Increment::stats(const std::string & fieldName) const {
   double norm = 0;
   int valid_points = 0;
   double min=1e30;
   double max=-1e30;
 
   auto field_view = atlas::array::make_view<double, 2>(
-      incrementFields_[field_name]);
+      incrementFields_[fieldName]);
   oops::Log::trace() << "Increment(ORCA)::norm" << std::endl;
   auto ghost = atlas::array::make_view<int32_t, 1>(
       geom_->mesh().nodes().ghost());
-  atlas::field::MissingValue mv(incrementFields()[field_name]);
+  atlas::field::MissingValue mv(incrementFields()[fieldName]);
   bool has_mv = static_cast<bool>(mv);
   for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
     for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
@@ -696,6 +750,7 @@ std::tuple<double, double, double> Increment::stats(const std::string & field_na
       }
     }
   }
+  
   return std::make_tuple(sqrt(norm)/valid_points, min, max);
 }
 

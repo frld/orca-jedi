@@ -490,24 +490,40 @@ void State::toFieldSet(atlas::FieldSet & fset) const {
   fset = atlas::FieldSet();
 
   for (size_t i=0; i < vars_.size(); ++i) {
-    // add variable if it isn't already in incrementFields
-//    std::vector<size_t> varSizes = geom_->variableSizes(vars_);
-//    if (!fset_.has(vars_[i])) {
-//      fset_.add(geom_->functionSpace().createField<double>(
-//           atlas::option::name(vars_[i]) |
-//           atlas::option::levels(varSizes[i])));
+    // add variable if it isn't already in stateFields
+    std::vector<size_t> varSizes = geom_->variableSizes(vars_);
+//    if (!stateFields_.has(vars_[i])) {
+      const auto addField = [&](auto typeVal) {
+        using T = decltype(typeVal);
+        fset.add(geom_->functionSpace().createField<double>(
+             atlas::option::name(vars_[i]) |
+             atlas::option::levels(varSizes[i])));
+        oops::Log::trace() << "State(ORCA)::toFieldSet : copying "
+                           << vars_[i] << " source dtype: "
+                           << (*(stateFields_.end()-1)).datatype().str() 
+                           << "dest dtype: "
+                           << (*(fset.end()-1)).datatype().str() 
+                           << std::endl;
+                           
+        auto field_view_in = atlas::array::make_view<T, 2>(stateFields_[i]);
+        auto field_view_out = atlas::array::make_view<double, 2>(fset[i]);
+        for (atlas::idx_t j = 0; j < field_view_in.shape(0); ++j) {
+          for (atlas::idx_t k = 0; k < field_view_in.shape(1); ++k) {
+//            if (!ghost(j)) field_view_out(j, k) = field_view_in(j,k);
+             field_view_out(j, k) = field_view_in(j,k);
+          }
+        }
+        int xpt = 91; int ypt = 49;
+        int jpt = ypt*182 + xpt;  // DJL hardwired to work with orca2  
+        oops::Log::debug() << "DJL fieldin value " << jpt << " " << field_view_in(jpt-1, 0) << " " << field_view_in(jpt, 0) << " " << field_view_in(jpt+1, 0) << std::endl;
+        oops::Log::debug() << "DJL fieldout value " << jpt << " " << field_view_out(jpt-1, 0) << " " << field_view_out(jpt, 0) << " " << field_view_out(jpt+1, 0) << std::endl;       
+      };
+      ApplyForFieldType(addField,
+                        geom_->fieldPrecision(vars_[i]),
+                        std::string("State(ORCA)::toFieldSet ")
+                        + vars_[i] + "' field type not recognised");
+      geom_->log_status();
 //    }
-    // copy variable from _Fields to new field set
-    atlas::Field field = stateFields_[i];
-    oops::Log::debug() << "Copy state field toFieldSet " << field.name() << std::endl;
-    fset->add(field);
-
-    auto field_view = atlas::array::make_view<double, 2>(field);
-//    int xpt = 141;  int ypt = 73;  
-    int xpt = 91; int ypt = 49;
-    int jpt = ypt*182 + xpt;  // DJL hardwired to work with orca2  
-    oops::Log::debug() << "DJL value " << jpt << " " << field_view(jpt-1, 0) << " " << field_view(jpt, 0) << " " << field_view(jpt+1, 0) << std::endl;
-    
   }
 
   oops::Log::debug() << "State toFieldSet done" << std::endl;

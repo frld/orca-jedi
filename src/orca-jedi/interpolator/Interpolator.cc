@@ -148,6 +148,9 @@ namespace orcamodel {
 
     // DJL question can the atlas templates help?
 
+    oops::Log::trace() << "orcamodel::Interpolator::apply increment "
+                       << std::endl;
+
     // input is inc output is result
 
     const size_t nvars = vars.size();
@@ -193,9 +196,9 @@ namespace orcamodel {
       }
     }
 
+    oops::Log::trace() << "orcamodel::Interpolator::apply increment done "
+                       << std::endl;
 
-//    throw eckit::NotImplemented("Increment interpolation not implemented",
-//                                Here());
   }
 
   void Interpolator::applyAD(const oops::Variables& vars, Increment& inc,

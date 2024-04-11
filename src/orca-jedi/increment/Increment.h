@@ -129,6 +129,7 @@ class Increment : public util::Printable,
 /// Data
  private:
   void setupIncrementFields();
+  void setval(const double &);
   // void print(std::ostream &) const override;
   std::shared_ptr<const Geometry> geom_;
   oops::Variables vars_;

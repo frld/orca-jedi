@@ -149,7 +149,7 @@ void writeIncFieldsToFile(
     nemo_field_path.append(".nc");
       oops::Log::info() << "Writing file: " << nemo_field_path << std::endl;
       
-    writeGenFieldsToFile(nemo_field_path, geom, valid_date, fs);
+    writeGenFieldsToFile(nemo_field_path, geom, valid_date, fs, FieldDType::Double);
 }
 
 
@@ -225,7 +225,8 @@ void writeGenFieldsToFile(
   const std::string nemo_field_path,
   const Geometry & geom,
   const util::DateTime & valid_date,
-  const atlas::FieldSet & fs) {
+  const atlas::FieldSet & fs,
+  const FieldDType & fielddtype) {
     oops::Log::trace() << "orcamodel::writeGenFieldsToFile:: start for valid_date"
                        << " " << valid_date << std::endl;
 
@@ -261,10 +262,13 @@ void writeGenFieldsToFile(
           writer.write_vol_var<T>(nemoName, 0, field_mv, field_view);
         }
       };
+      auto fieldprecision = geom.fieldPrecision(fieldName);
+      // override field type
+      if (fielddtype != FieldDType::unset) {fieldprecision = fielddtype;}
       ApplyForFieldType(write,
-                        geom.fieldPrecision(fieldName),
-                        std::string("State(ORCA)::writeGenFieldsToFile '")
-                          + nemoName + "' field type not recognised.");
+                  fieldprecision,
+                  std::string("State(ORCA)::writeGenFieldsToFile '")
+                    + nemoName + "' field type not recognised.");
     }
 }
 
