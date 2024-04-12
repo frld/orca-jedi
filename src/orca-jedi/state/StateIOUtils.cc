@@ -199,9 +199,13 @@ void writeFieldsToFile(
 
     std::string output_filename =
       params.outputNemoFieldFile.value().value_or("");
-    if (output_filename == "")
-      throw eckit::BadValue(std::string("orcamodel::writeFieldsToFile:: ")
-          + "file name not specified", Here());
+    if (output_filename == "") {
+      output_filename = "dummy.nc";    // DJL
+      eckit::Log::warning() << "WARNING: orcamodel::writeFieldsToFile "
+          << "file name not specified. Writing to " << output_filename 
+          << std::endl;}
+
+
 
 /*    std::map<std::string, std::string> varCoordTypeMap;
     {

@@ -287,9 +287,9 @@ void Covariance::multiply(const Increment & dxin, Increment & dxout) const {
 
     boost::uuids::uuid uuid = boost::uuids::random_generator()();    
 
-    writeGenFieldsToFile("errorcov_dxin_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxin.validTime(), dxin.incrementFields());
+    writeGenFieldsToFile("errorcov_dxin_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxin.validTime(), dxin.incrementFields(), FieldDType::Double);
     
-    writeGenFieldsToFile("errorcov_dxout_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxout.validTime(), dxout.incrementFields());
+    writeGenFieldsToFile("errorcov_dxout_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxout.validTime(), dxout.incrementFields(), FieldDType::Double);
    
    oops::Log::trace() << "Covariance multiply end" << std::endl;
 
@@ -315,13 +315,13 @@ void Covariance::inverseMultiply(const Increment & dxi, Increment & dxo) const {
 
     boost::uuids::uuid uuid = boost::uuids::random_generator()();    
 
-    writeGenFieldsToFile("cov_invmult_dxi_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxi.validTime(), dxi.incrementFields());
+    writeGenFieldsToFile("cov_invmult_dxi_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxi.validTime(), dxi.incrementFields(), FieldDType::Double);
     
-    writeGenFieldsToFile("cov_invmult_dxo1_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxo.validTime(), dxo.incrementFields());
+    writeGenFieldsToFile("cov_invmult_dxo1_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxo.validTime(), dxo.incrementFields(), FieldDType::Double);
 
    oops::GMRESR(dxo, dxi, *this, Id, 10, 1.0e-3);
 
-    writeGenFieldsToFile("cov_invmult_dxo2_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxo.validTime(), dxo.incrementFields());
+    writeGenFieldsToFile("cov_invmult_dxo2_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxo.validTime(), dxo.incrementFields(), FieldDType::Double);
 
    oops::Log::trace() << "Covariance inverse multiply done" << std::endl;
 
