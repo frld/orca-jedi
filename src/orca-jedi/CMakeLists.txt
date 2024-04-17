@@ -16,6 +16,8 @@ list( APPEND oops_orcamodel_src_files
 covariance/Covariance.h
 covariance/CovarianceParameters.h
 covariance/Covariance.cc
+covariance/SaberOrcaJediFilter.h
+covariance/SaberOrcaJediFilter.cc
 nemovar/ErrorCovarianceNV.h
 nemovar/ErrorCovarianceNV.cc
 nemovar/ErrorCovarianceNV.interface.F90
