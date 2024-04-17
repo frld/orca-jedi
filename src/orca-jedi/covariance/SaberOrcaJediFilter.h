@@ -77,7 +77,7 @@ class OrcaJediFilter : public SaberOuterBlockBase {
   /// inner Geometry Data for next block
   const oops::GeometryData & innerGeometryData_;
   /// inner variables for next block
-  const oops::Variables & innerVars_;
+  const oops::Variables innerVars_;
 };
 
 }  // namespace orcajedifilter

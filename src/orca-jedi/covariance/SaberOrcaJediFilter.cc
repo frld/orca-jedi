@@ -8,25 +8,13 @@
 #include "atlas/functionspace/StructuredColumns.h"
 
 #include "orca-jedi/covariance/SaberOrcaJediFilter.h"
-//include "orca-jedi/nemovar/ErrorCovarianceNV.h"
-
-//include "orca-jedi/state/State.h"
-//include "orca-jedi/geometry/Geometry.h"
-//include "orca-jedi/increment/Increment.h"
 
 #include "eckit/config/Configuration.h"
 #include "eckit/exception/Exceptions.h"
 
-//include "oops/base/Variables.h"
-
-//include "nemovar/GeometryNV.h"
-//include "nemovar/FortranNV.h"
-//include "nemovar/VariablesNV.h"
-//include "nemovar/StateNV.h"
-//include "nemovar/IncrementNV.h"
-
 #include "oops/util/Logger.h"
 #include "saber/oops/Utilities.h"
+
 //include "oops/base/IdentityMatrix.h"
 //include "oops/assimilation/GMRESR.h"
 // DJL (below)
@@ -66,102 +54,10 @@ OrcaJediFilter::OrcaJediFilter(const oops::GeometryData & geometryData,
 
 {
 
-//Covariance::Covariance(const Geometry & geom, const oops::Variables & vars,
-//             const eckit::Configuration & conf, const State & x1, const State & x2)
-//             : geom_(geom), vars_(vars), covtyp_(conf.getString("covtype"))
-//{
-
 // convert state
 
    oops::Log::trace() << "OrcaJediFilter Covariance setting up" << std::endl;
 
-//   oops::Log::trace() << "DJL covtype " << covtyp_ << std::endl;
-
-// where is NEMOVAR geom stored?
-// vars_nv from vars?
-// Need a new constructor to zero state
-
-//   nv::VariablesNV vars_nv(eckit::LocalConfiguration(conf, "Variables"));
-//   nv::VariablesNV nvvars_(eckit::LocalConfiguration(conf, "state variables"));          // surely won't work
-
-//   nvvars_.reset(new nv::VariablesNV(0));
-   
-//   nv::ErrorCovarianceNV errorcovnv(*nvvars_, conf);    // Setup Nemovar covariance
-//   nv::ErrorCovarianceNV errorcovnv();    // Setup Nemovar covariance
-
-
-//   nv::VariablesNV nvvars_(conf);
-//   nvvars_.reset(new nv::VariablesNV(conf));
-//   nvvars_.reset(new nv::VariablesNV(0));
-
-//   oops::Log::trace() << "DJL variablesnv_int " << (*nvvars_).variablesnv_int << std::endl;
-
-// Alternative to put oops::Variables in VariablesNV
-
-//   oops::Log::trace() << "DJL nvgeom_avail_ " << geom_.nvgeom_avail_ << std::endl;
-
-//   nvgeom_.reset(geom_.getNVgeometry());
-    
-//   nv::GeometryNV nvgeom = geom_.getNVgeometry(); // DJL try shared pointer instead
-//    std::shared_ptr<const nv::GeometryNV> nvgeom = geom_.getNVgeometryPtr();
-   
-//   nv::GeometryNV nvgeom = nv::GeometryNV(conf);
-   
-//   oops::Log::trace() << "DJL geomnv_int " << (*nvgeom).geomnv_int << std::endl;
-   
-  
-//    = std::make_shared<nv::GeometryNV>(geom.getNVgeometry());
-//   nvgeom_ = geom.getNVgeometryPtr();   // DJL
-
-//   oops::Log::trace() << "DJL creating stateNV x1nv " << std::endl;
-
-//   nv::StateNV x1nv(*nvgeom, *nvvars_, conf);
-
-/* 
-// tests...
-// DJL what I want to do is get orca-jedi state and copy it into the x1nv
-// DJL I might just try putting the entire 1d array directly in set(from)array 
-
-   nv::FieldsNV fields1nv = x1nv.getFields();
-   
-   std::vector<double> field1array; 
-   int64_t len1 = 100;
-   fields1nv.getarray(len1, field1array);
-
-   oops::Log::trace() << "DJL output field1array " << field1array << std::endl;
-
-   for(double& x : field1array) // if you want to add 2.4 to each element
-    x += 2.4;
-
-   //field1array += 2.4;
-   //std::vector<double> field1array2 = 2453.2;
-   fields1nv.setarray(len1, field1array);
-   
-   fields1nv.getarray(len1, field1array);
-   
-   oops::Log::trace() << "DJL output field1array (after setting) " << field1array << std::endl;
-
-
-//   fields2nv.setarray(field1array);
-
-//   x1nv.getFieldsPtr().set(;
-
-
-   oops::Log::trace() << "DJL creating stateNV x2nv " << std::endl;
-    
-//   nv::StateNV x2nv(*nvgeom, *nvvars_, conf);   // what is state x2 for?
-   
-//   oops::Log::trace() << "DJL calling ErrorCovarianceNV2" << std::endl;
-   //conf.set("date", "2021-06-30T12:00:00Z"); // DJL doesn't work
-
-//   nv::ErrorCovarianceNV nverrorcov2(*nvgeom, *nvvars_, conf);  //, x2nv);
-//   nv::ErrorCovarianceNV nverrorcov3();                             // DJL empty errorcov
-
-*/
-//   oops::Log::trace() << "DJL calling ErrorCovarianceNV4" << std::endl;
-        
-//   nv::ErrorCovarianceNV nverrorcov4(*nvgeom, *nvvars_, conf, x1nv);  //, x2nv);  // test
-//   nverrorcov_.reset(new nv::ErrorCovarianceNV(*nvgeom, *nvvars_, conf, x1nv));  //, x2nv);
 
    oops::Log::trace() << "OrcaJediFilter Covariance created" << std::endl;
              
@@ -179,7 +75,7 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
 
    oops::Log::trace() << "OrcaJediFilter Covariance multiply" << std::endl;
 
-   oops::Log::trace() << "OrcaJediFilter Covariance multiply index " << std::endl;
+//   oops::Log::trace() << "OrcaJediFilter Covariance multiply index " << std::endl;
 //   dxout = dxin;
    
    atlas::Field field = fieldSet[0];
@@ -364,12 +260,6 @@ void OrcaJediFilter::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
    oops::Log::trace() << "OrcaJediFilter Covariance inverse multiply done" << std::endl;
 
 }
-// -----------------------------------------------------------------------------
-//void Covariance::randomize(Increment & dx) const {
-//
-//   oops::Log::trace() << "Covariance randomize" << std::endl;
-//
-//}
 
 oops::FieldSet3D OrcaJediFilter::generateInnerFieldSet(
   const oops::GeometryData & innerGeometryData,
