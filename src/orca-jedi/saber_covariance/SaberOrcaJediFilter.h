@@ -17,7 +17,8 @@
 #include "oops/base/Variables.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+//include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/SaberCentralBlockBase.h"
 
 namespace saber {
 namespace orcajedifilter {
@@ -39,7 +40,7 @@ class OrcaJediFilterParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class OrcaJediFilter : public SaberOuterBlockBase {
+class OrcaJediFilter : public SaberCentralBlockBase {
  public:
   static const std::string classname() {return "saber::orcajedifilter::OrcaJediFilter";}
 
@@ -52,20 +53,22 @@ class OrcaJediFilter : public SaberOuterBlockBase {
                            const oops::FieldSet3D &,
                            const oops::FieldSet3D &);
 
-  virtual ~OrcaJediFilter() = default;
-
-  const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
-  const oops::Variables & innerVars() const override {return innerVars_;}
+  virtual ~OrcaJediFilter();
+//  virtual ~OrcaJediFilter() = default;
+//
+//  const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
+//  const oops::Variables & innerVars() const override {return innerVars_;}
 
   void multiply(oops::FieldSet3D &) const override;
-  void multiplyAD(oops::FieldSet3D &) const override;
-  void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void randomize(oops::FieldSet3D &) const override;
 
-  oops::FieldSet3D generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
-                                        const oops::Variables & innerVars) const override;
+  size_t ctlVecSize() const override {return ctlVecSize_;}
 
-  oops::FieldSet3D generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
-                                        const oops::Variables & outerVars) const override;
+//  oops::FieldSet3D generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
+//                                        const oops::Variables & innerVars) const override;
+
+//  oops::FieldSet3D generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
+//                                        const oops::Variables & outerVars) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -74,10 +77,14 @@ class OrcaJediFilter : public SaberOuterBlockBase {
   Parameters_ params_;
   /// Active variables
   const oops::Variables activeVars_;
+  const oops::GeometryData & geometryData_;
+  size_t ctlVecSize_;
+//  void print(std::ostream &) const override;
+
   /// inner Geometry Data for next block
-  const oops::GeometryData & innerGeometryData_;
+//  const oops::GeometryData & innerGeometryData_;
   /// inner variables for next block
-  const oops::Variables innerVars_;
+//  const oops::Variables innerVars_;
 };
 
 }  // namespace orcajedifilter

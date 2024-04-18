@@ -29,7 +29,9 @@ namespace orcajedifilter {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<OrcaJediFilter> makerOrcaJediFilter_(
+//static SaberOuterBlockMaker<OrcaJediFilter> makerOrcaJediFilter_(
+//        "orca jedi filter");
+static SaberCentralBlockMaker<OrcaJediFilter> makerOrcaJediFilter_(
         "orca jedi filter");
 
 // -----------------------------------------------------------------------------
@@ -42,22 +44,33 @@ static SaberOuterBlockMaker<OrcaJediFilter> makerOrcaJediFilter_(
 
 // -----------------------------------------------------------------------------
 OrcaJediFilter::OrcaJediFilter(const oops::GeometryData & geometryData,
-                                               const oops::Variables & outerVars,
+                                               const oops::Variables & activeVars,
                                                const eckit::Configuration & covarConf,
                                                const Parameters_ & params,
                                                const oops::FieldSet3D & xb,
                                                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()), params_(params),
-    activeVars_(getActiveVars(params, outerVars)),
-    innerGeometryData_(geometryData),
-    innerVars_(outerVars)
+  : SaberCentralBlockBase(params, xb.validTime()), params_(params),
+    geometryData_(geometryData),
+    activeVars_(activeVars),
+    ctlVecSize_(0)
+//    activeVars_(getActiveVars(params, outerVars)),
+//    innerGeometryData_(geometryData),
+//    innerVars_(outerVars)
 
 {
 
-// convert state
-
    oops::Log::trace() << "OrcaJediFilter Covariance setting up" << std::endl;
 
+  // Compute total number of levels
+  size_t nlev = 0;
+  for (const std::string & var : activeVars.variables()) {
+    nlev += activeVars.getLevels(var);
+  }
+
+  // Compute control vector size
+  ctlVecSize_ = nlev*geometryData_.functionSpace().size();
+
+   oops::Log::trace() << "OrcaJediFilter ctlVecSize " << ctlVecSize_ << std::endl;
 
    oops::Log::trace() << "OrcaJediFilter Covariance created" << std::endl;
              
@@ -215,53 +228,32 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
 //    writeGenFieldsToFile("errorcov_dxout_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxout.validTime(), dxout.incrementFields(), FieldDType::Double);
      oops::Log::trace() << "OrcaJediFilter Covariance multiply end" << std::endl;
      }
+
+
+OrcaJediFilter::~OrcaJediFilter() {
+  oops::Log::trace() << classname() << "::~OrcaJediFilter dtor starting" << std::endl;
+  oops::Log::trace() << classname() << "::~OrcaJediFilter dtor done" << std::endl;
+}
+
 // -----------------------------------------------------------------------------
 
-void OrcaJediFilter::multiplyAD(oops::FieldSet3D & fieldSet) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+void OrcaJediFilter::randomize(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
+  oops::Log::trace() << classname() << "::randomize warning empty" << std::endl;
 
-  // The block is self-adjoint:
-  multiply(fieldSet);
+  // Consistency check
+  for (const auto & var : activeVars_.variables()) {
+      ASSERT(fset.has(var));
+  }
 
-  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
+  // Random initialization
+//  fset.randomInit(geometryData_.functionSpace(), activeVars_);
+
+  oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 
-//void Covariance::inverseMultiply(const Increment & dxi, Increment & dxo) const {
-void OrcaJediFilter::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
-
-   oops::Log::trace() << "OrcaJediFilter Covariance left inverse multiply" << std::endl;
-   
-/*   // DJL test
-//   multiply(dxin, dxout);
-
-// adapted/copied from saber/ErrorCovariance.h
-
-     // Iterative inverse
-   oops::IdentityMatrix<Increment> Id;
-
-   oops::Log::trace() << "Covariance inverse multiply identity matrix done" << std::endl;
-
-   dxo.zero();
-
-   oops::Log::trace() << "Covariance inverse multiply identity zero done" << std::endl;
-
-    boost::uuids::uuid uuid = boost::uuids::random_generator()();    
-
-    writeGenFieldsToFile("cov_invmult_dxi_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxi.validTime(), dxi.incrementFields(), FieldDType::Double);
-    
-    writeGenFieldsToFile("cov_invmult_dxo1_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxo.validTime(), dxo.incrementFields(), FieldDType::Double);
-
-
-    oops::GMRESR(dxo, dxi, *this, Id, 10, 1.0e-3);
-
-    writeGenFieldsToFile("cov_invmult_dxo2_"+ boost::uuids::to_string(uuid) +".nc", geom_, dxo.validTime(), dxo.incrementFields(), FieldDType::Double);
-*/
-   oops::Log::trace() << "OrcaJediFilter Covariance inverse multiply done" << std::endl;
-
-}
-
-oops::FieldSet3D OrcaJediFilter::generateInnerFieldSet(
+/* oops::FieldSet3D OrcaJediFilter::generateInnerFieldSet(
   const oops::GeometryData & innerGeometryData,
   const oops::Variables & innerVars) const {
   oops::FieldSet3D fset(this->validTime(), innerGeometryData.comm());
@@ -288,7 +280,7 @@ oops::FieldSet3D OrcaJediFilter::generateOuterFieldSet(
 
   return fset;
 }
-
+*/
 
 
 // -----------------------------------------------------------------------------

@@ -1,7 +1,8 @@
 background error:
   covariance model: SABER
   saber central block:
-    saber block name: ID
+    saber block name: orca jedi filter
+#    saber block name: ID
 #    saber block name: BUMP_NICAS
 #    read:
 #      general:
@@ -25,8 +26,8 @@ background error:
 #        - groups:
 #          - ice_area_fraction 
 #          value: 10
-  saber outer blocks:
-  - saber block name: orca jedi filter
+#  saber outer blocks:
+#  - saber block name: orca jedi filter
 #  - saber block name: BUMP_StdDev
 #    read:
 #      general:
