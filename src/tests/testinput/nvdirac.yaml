@@ -29,7 +29,7 @@ geometry:
       variable type: background variance
   grid name: ORCA2_T
   number levels: 10
-  use nemovar: true
+  use nemovar: false
 background:
   date: 2021-06-30T12:00:00Z
   state variables: [ ice_area_fraction ]

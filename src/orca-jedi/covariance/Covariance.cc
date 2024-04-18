@@ -68,76 +68,41 @@ Covariance::Covariance(const Geometry & geom, const oops::Variables & vars,
 
 //   nv::VariablesNV nvvars_(conf);
 //   nvvars_.reset(new nv::VariablesNV(conf));
-   nvvars_.reset(new nv::VariablesNV(0));
 
-   oops::Log::trace() << "DJL variablesnv_int " << (*nvvars_).variablesnv_int << std::endl;
+   if (covtyp_ == "Nemovar") {
 
-// Alternative to put oops::Variables in VariablesNV
+      nvvars_.reset(new nv::VariablesNV(0));
 
-//   oops::Log::trace() << "DJL nvgeom_avail_ " << geom_.nvgeom_avail_ << std::endl;
+      oops::Log::trace() << "DJL variablesnv_int " << (*nvvars_).variablesnv_int << std::endl;
 
-//   nvgeom_.reset(geom_.getNVgeometry());
-    
-//   nv::GeometryNV nvgeom = geom_.getNVgeometry(); // DJL try shared pointer instead
-    std::shared_ptr<const nv::GeometryNV> nvgeom = geom_.getNVgeometryPtr();
-   
-//   nv::GeometryNV nvgeom = nv::GeometryNV(conf);
-   
-   oops::Log::trace() << "DJL geomnv_int " << (*nvgeom).geomnv_int << std::endl;
-   
-  
-//    = std::make_shared<nv::GeometryNV>(geom.getNVgeometry());
-//   nvgeom_ = geom.getNVgeometryPtr();   // DJL
+   // Alternative to put oops::Variables in VariablesNV
 
-   oops::Log::trace() << "DJL creating stateNV x1nv " << std::endl;
+   //   oops::Log::trace() << "DJL nvgeom_avail_ " << geom_.nvgeom_avail_ << std::endl;
 
-   nv::StateNV x1nv(*nvgeom, *nvvars_, conf);
+   //   nvgeom_.reset(geom_.getNVgeometry());
 
-/* 
-// tests...
-// DJL what I want to do is get orca-jedi state and copy it into the x1nv
-// DJL I might just try putting the entire 1d array directly in set(from)array 
+   //   nv::GeometryNV nvgeom = geom_.getNVgeometry(); // DJL try shared pointer instead
+       std::shared_ptr<const nv::GeometryNV> nvgeom = geom_.getNVgeometryPtr();
 
-   nv::FieldsNV fields1nv = x1nv.getFields();
-   
-   std::vector<double> field1array; 
-   int64_t len1 = 100;
-   fields1nv.getarray(len1, field1array);
+   //   nv::GeometryNV nvgeom = nv::GeometryNV(conf);
 
-   oops::Log::trace() << "DJL output field1array " << field1array << std::endl;
-
-   for(double& x : field1array) // if you want to add 2.4 to each element
-    x += 2.4;
-
-   //field1array += 2.4;
-   //std::vector<double> field1array2 = 2453.2;
-   fields1nv.setarray(len1, field1array);
-   
-   fields1nv.getarray(len1, field1array);
-   
-   oops::Log::trace() << "DJL output field1array (after setting) " << field1array << std::endl;
+      oops::Log::trace() << "DJL geomnv_int " << (*nvgeom).geomnv_int << std::endl;
 
 
-//   fields2nv.setarray(field1array);
+   //    = std::make_shared<nv::GeometryNV>(geom.getNVgeometry());
+   //   nvgeom_ = geom.getNVgeometryPtr();   // DJL
 
-//   x1nv.getFieldsPtr().set(;
+      oops::Log::trace() << "DJL creating stateNV x1nv " << std::endl;
 
+      nv::StateNV x1nv(*nvgeom, *nvvars_, conf);
 
-   oops::Log::trace() << "DJL creating stateNV x2nv " << std::endl;
-    
-//   nv::StateNV x2nv(*nvgeom, *nvvars_, conf);   // what is state x2 for?
-   
-//   oops::Log::trace() << "DJL calling ErrorCovarianceNV2" << std::endl;
-   //conf.set("date", "2021-06-30T12:00:00Z"); // DJL doesn't work
+      oops::Log::trace() << "DJL calling ErrorCovarianceNV4" << std::endl;
 
-//   nv::ErrorCovarianceNV nverrorcov2(*nvgeom, *nvvars_, conf);  //, x2nv);
-//   nv::ErrorCovarianceNV nverrorcov3();                             // DJL empty errorcov
+   //   nv::ErrorCovarianceNV nverrorcov4(*nvgeom, *nvvars_, conf, x1nv);  //, x2nv);  // test
+      nverrorcov_.reset(new nv::ErrorCovarianceNV(*nvgeom, *nvvars_, conf, x1nv));  //, x2nv);
 
-*/
-   oops::Log::trace() << "DJL calling ErrorCovarianceNV4" << std::endl;
-        
-//   nv::ErrorCovarianceNV nverrorcov4(*nvgeom, *nvvars_, conf, x1nv);  //, x2nv);  // test
-   nverrorcov_.reset(new nv::ErrorCovarianceNV(*nvgeom, *nvvars_, conf, x1nv));  //, x2nv);
+   }
+
 
    oops::Log::trace() << "Covariance created" << std::endl;
              
@@ -168,6 +133,8 @@ void Covariance::multiply(const Increment & dxin, Increment & dxout) const {
 // Shapiro ?
 
    if (covtyp_ == "Shapiro") {
+
+      oops::Log::trace() << "Covariance multiply shapiro" << std::endl;
 
       atlas::idx_t k = 0;
 

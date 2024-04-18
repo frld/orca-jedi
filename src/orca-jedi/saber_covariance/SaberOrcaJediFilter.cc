@@ -7,7 +7,7 @@
 #include "atlas/field/MissingValue.h"
 #include "atlas/functionspace/StructuredColumns.h"
 
-#include "orca-jedi/covariance/SaberOrcaJediFilter.h"
+#include "orca-jedi/saber_covariance/SaberOrcaJediFilter.h"
 
 #include "eckit/config/Configuration.h"
 #include "eckit/exception/Exceptions.h"

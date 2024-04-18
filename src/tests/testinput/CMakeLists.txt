@@ -16,9 +16,11 @@ list( APPEND orcajedi_test_input
   test_name_map.yaml
   3dvar_seaice_obs.yaml
   nv3dvar_seaice_obs.yaml
+  ojs3dvar_seaice_obs.yaml
   3dvar_seaice_obs_orca1.yaml
   dirac.yaml
   nvdirac.yaml
+  ojsdirac.yaml
   error_covariance_training_bump_nicas.yaml
   error_covariance_training_bump_nicas_orca1.yaml
 )
