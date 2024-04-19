@@ -1,6 +1,12 @@
 /* Copyright Met Office 2023
 */
 
+#include "orca-jedi/nemovar/GeometryNV.h"
+#include "orca-jedi/nemovar/VariablesNV.h"
+#include "orca-jedi/nemovar/StateNV.h"
+#include "orca-jedi/nemovar/ErrorCovarianceNV.h"
+#include "orca-jedi/nemovar/IncrementNV.h"
+
 #include "atlas/array/MakeView.h"
 #include "atlas/field/Field.h"
 #include "atlas/field/FieldSet.h"
@@ -52,7 +58,8 @@ OrcaJediFilter::OrcaJediFilter(const oops::GeometryData & geometryData,
   : SaberCentralBlockBase(params, xb.validTime()), params_(params),
     geometryData_(geometryData),
     activeVars_(activeVars),
-    ctlVecSize_(0)
+    ctlVecSize_(0) //,
+//    covtyp_(covarConf.getString("covtype"))
 //    activeVars_(getActiveVars(params, outerVars)),
 //    innerGeometryData_(geometryData),
 //    innerVars_(outerVars)
@@ -60,6 +67,45 @@ OrcaJediFilter::OrcaJediFilter(const oops::GeometryData & geometryData,
 {
 
    oops::Log::trace() << "OrcaJediFilter Covariance setting up" << std::endl;
+
+   covtyp_ = "Nemovar";  // DJL hardwire
+
+   if (covtyp_ == "Nemovar") {
+
+      oops::Log::debug() << "Now setting up orca-jedi nemovar geometry DJL in saber" << std::endl;         // DJL
+      nvgeom_.reset(new nv::GeometryNV(covarConf));
+
+      nvvars_.reset(new nv::VariablesNV(0));
+
+      oops::Log::trace() << "DJL variablesnv_int " << (*nvvars_).variablesnv_int << std::endl;
+
+   // Alternative to put oops::Variables in VariablesNV
+
+   //   oops::Log::trace() << "DJL nvgeom_avail_ " << geom_.nvgeom_avail_ << std::endl;
+
+   //   nvgeom_.reset(geom_.getNVgeometry());
+
+   //   nv::GeometryNV nvgeom = geom_.getNVgeometry(); // DJL try shared pointer instead
+   //    std::shared_ptr<const nv::GeometryNV> nvgeom = geom_.getNVgeometryPtr();
+
+   //   nv::GeometryNV nvgeom = nv::GeometryNV(covarConf);
+
+      oops::Log::trace() << "DJL geomnv_int " << (*nvgeom_).geomnv_int << std::endl;
+
+
+   //    = std::make_shared<nv::GeometryNV>(geom.getNVgeometry());
+   //   nvgeom_ = geom.getNVgeometryPtr();   // DJL
+
+      oops::Log::trace() << "DJL creating stateNV x1nv " << std::endl;
+
+      nv::StateNV x1nv(*nvgeom_, *nvvars_, covarConf);
+
+      oops::Log::trace() << "DJL calling ErrorCovarianceNV4" << std::endl;
+
+   //   nv::ErrorCovarianceNV nverrorcov4(*nvgeom_, *nvvars_, covarConf, x1nv);  //, x2nv);  // test
+      nverrorcov_.reset(new nv::ErrorCovarianceNV(*nvgeom_, *nvvars_, covarConf, x1nv));  //, x2nv);
+
+   }
 
   // Compute total number of levels
   size_t nlev = 0;
@@ -102,7 +148,7 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
 
 // Shapiro ?
 
-//   if (covtyp_ == "Shapiro") {
+   if (covtyp_ == "Shapiro") {
 
       atlas::idx_t k = 0;
 
@@ -152,15 +198,13 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
    //      }
        }
 
-/*   } else if (covtyp_ == "Nemovar") {
+   } else if (covtyp_ == "Nemovar") {
 
-      std::shared_ptr<const nv::GeometryNV> nvgeom = geom_.getNVgeometryPtr();
-
-      util::DateTime time = dxin.time();
+      util::DateTime time = fieldSet.validTime();
 
       oops::Log::trace() << "Covariance multiply 1" << std::endl;
 
-      nv::IncrementNV dxin_nv(*nvgeom, *nvvars_, time);
+      nv::IncrementNV dxin_nv(*nvgeom_, *nvvars_, time);
 
    // Convert from Increment (orca-jedi / atlas) to IncrementNV
 
@@ -168,13 +212,13 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
 
       std::vector<double> field1array(len1, 0);   
 
-      atlas::Field fieldin = dxin.incrementFields()[0];
-      auto field_view1 = atlas::array::make_view<double, 2>(fieldin);
+//      atlas::Field fieldin = field;
+//      auto field_view1 = atlas::array::make_view<double, 2>(fieldin);
 
       atlas::idx_t k1 = 0;
-      for (atlas::idx_t j = 0; j < field_view1.shape(0); ++j) {
-   //      for (atlas::idx_t k = 0; k < field_view1.shape(1); ++k) {
-          field1array[j] = field_view1(j, k1); 
+      for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
+   //      for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
+          field1array[j] = field_view(j, k1); 
    //      }
        }
 
@@ -182,7 +226,7 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
 
       oops::Log::trace() << "Covariance multiply 2" << std::endl;
 
-      nv::IncrementNV dxout_nv(*nvgeom, *nvvars_, time);
+      nv::IncrementNV dxout_nv(*nvgeom_, *nvvars_, time);
 
       oops::Log::trace() << "Covariance multiply 3" << std::endl;
 
@@ -200,8 +244,8 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
       std::vector<double> field2array;
       fields2nv.getarray(len1, field2array);   
 
-      atlas::Field field = dxout.incrementFields()[0];
-      auto field_view = atlas::array::make_view<double, 2>(field);
+//      atlas::Field field = dxout.incrementFields()[0];
+//      auto field_view = atlas::array::make_view<double, 2>(field);
 
       oops::Log::trace() << "Covariance multiply 4 len1 " << len1 << std::endl;
       oops::Log::trace() << "Covariance multiply 4 field_view.shape(0) " << field_view.shape(0) << len1 << std::endl;
@@ -219,7 +263,7 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
 
        throw eckit::NotImplemented(err_message, Here());
     }
-*/
+
 //
 //    boost::uuids::uuid uuid = boost::uuids::random_generator()();    
 //

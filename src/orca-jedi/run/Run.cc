@@ -21,6 +21,7 @@ Run::Run(int argc, char ** argv) : oops::Run(argc, argv) {
   const eckit::Configuration * conf = &config();
   // unifiedmodel_init_f90(&conf);
 
+// DJL could do with something to skip if not required
   oops::Log::trace() << "Calling NEMOVAR_INIT" << std::endl;
 
   nv::nv_init_f90(&conf);

@@ -8,6 +8,10 @@ cost function:
     covariance model: SABER
     saber central block:
       saber block name: orca jedi filter
+#        function:
+#          covtype: Nemovar
+#          covtype: Shapiro
+
 #      saber block name: ID
 #      saber block name: BUMP_NICAS
 #      read:

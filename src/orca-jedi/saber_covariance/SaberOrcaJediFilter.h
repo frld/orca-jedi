@@ -13,6 +13,10 @@
 
 #include "eckit/config/LocalConfiguration.h"
 
+#include "orca-jedi/nemovar/GeometryNV.h"
+#include "orca-jedi/nemovar/VariablesNV.h"
+#include "orca-jedi/nemovar/ErrorCovarianceNV.h"
+
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
@@ -70,6 +74,8 @@ class OrcaJediFilter : public SaberCentralBlockBase {
 //  oops::FieldSet3D generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
 //                                        const oops::Variables & outerVars) const override;
 
+//  std::shared_ptr<const nv::GeometryNV> getNVgeometryPtr() const {return nvgeom_;}
+
  private:
   void print(std::ostream &) const override;
 
@@ -79,6 +85,12 @@ class OrcaJediFilter : public SaberCentralBlockBase {
   const oops::Variables activeVars_;
   const oops::GeometryData & geometryData_;
   size_t ctlVecSize_;
+  std::shared_ptr<nv::GeometryNV> nvgeom_;
+  std::shared_ptr<nv::VariablesNV> nvvars_;
+  std::shared_ptr<nv::ErrorCovarianceNV> nverrorcov_;
+  std::string covtyp_;
+
+  
 //  void print(std::ostream &) const override;
 
   /// inner Geometry Data for next block
