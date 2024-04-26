@@ -31,10 +31,13 @@
 #include "orca-jedi/state/StateIOUtils.h"
 #include "orca-jedi/increment/Increment.h"
 // DJL (below)
-#include <boost/uuid/uuid.hpp>            // uuid class
-#include <boost/uuid/uuid_generators.hpp> // generators
-#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
+//include <boost/uuid/uuid.hpp>            // uuid class
+//include <boost/uuid/uuid_generators.hpp> // generators
+//include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
 #include "orca-jedi/state/StateIOUtils.h"
+
+#include "atlas/mesh.h"
+#include "atlas-orca/grid/OrcaGrid.h"
 
 namespace orcamodel {
 
@@ -430,11 +433,11 @@ double Increment::dot_product_with(const Increment & dx) const {
     }
   }
 
-    boost::uuids::uuid uuid = boost::uuids::random_generator()();    
+//    boost::uuids::uuid uuid = boost::uuids::random_generator()();    
 
-    writeGenFieldsToFile("increment_dotprod_intern_"+ boost::uuids::to_string(uuid) +".nc", *geom_, validTime(), incrementFields_);
+//    writeGenFieldsToFile("increment_dotprod_intern_"+ boost::uuids::to_string(uuid) +".nc", *geom_, validTime(), incrementFields_);
 
-    writeGenFieldsToFile("increment_dotprod_dx_"+ boost::uuids::to_string(uuid) +".nc", *geom_, dx.validTime(), dx.incrementFields());
+//    writeGenFieldsToFile("increment_dotprod_dx_"+ boost::uuids::to_string(uuid) +".nc", *geom_, dx.validTime(), dx.incrementFields());
 
   oops::Log::debug() << "orcamodel::Increment::dot_product_with ended :: zz = " << zz << std::endl;
 
@@ -497,10 +500,16 @@ void Increment::dirac(const eckit::Configuration & conf) {
 // DJL this is 30S, 100W in orca2 (-30N, 260E)
 //  int xpt = 91;  int ypt = 49; 
 
-// DJL hardwired to fixed point on the orca2 grid
-// should be made more flexible in future    
-  int jpt = ypt*182 + xpt;
-  int kpt = 0; 
+  const std::vector<int> & ixdir = conf.getIntVector("ixdir");
+  const std::vector<int> & iydir = conf.getIntVector("iydir");
+  const std::vector<int> & izdir =  conf.getIntVector("izdir");
+
+  atlas::OrcaGrid orcaGrid = geom_->mesh().grid();
+  int nx = orcaGrid.nx() + orcaGrid.haloWest() + orcaGrid.haloEast();
+  oops::Log::debug() << "orcamodel::Increment::dirac:: nx " << nx << std::endl;
+   
+  int jpt = iydir[0]*nx + ixdir[0];
+  int kpt = izdir[0]; 
 
   oops::Log::debug() << "orcamodel::Increment::dirac:: delta function at jpt = " << jpt 
                        << " kpt " << kpt << std::endl;

@@ -17,10 +17,13 @@
 #include "orca-jedi/nemovar/VariablesNV.h"
 #include "orca-jedi/nemovar/ErrorCovarianceNV.h"
 
+#include "orca-jedi/geometry/Geometry.h"
+
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "orca-jedi/saber_covariance/SaberOrcaJediFilter.h"
+//include "saber/blocks/SaberBlockParametersBase.h"
 //include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/blocks/SaberCentralBlockBase.h"
 
@@ -38,6 +41,8 @@ class OrcaJediFilterParameters : public SaberBlockParametersBase {
     /// Filter specifications
     oops::Parameter<eckit::LocalConfiguration> function{"function",
                                                         eckit::LocalConfiguration(), this};
+    oops::RequiredParameter<eckit::LocalConfiguration> geometry{"geometry", this};
+    oops::RequiredParameter<std::string> covtype{"covtype", this};
 
     oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
@@ -84,12 +89,17 @@ class OrcaJediFilter : public SaberCentralBlockBase {
   /// Active variables
   const oops::Variables activeVars_;
   const oops::GeometryData & geometryData_;
+
+  std::shared_ptr<const orcamodel::Geometry> geom_;
+  
   size_t ctlVecSize_;
   std::shared_ptr<nv::GeometryNV> nvgeom_;
   std::shared_ptr<nv::VariablesNV> nvvars_;
   std::shared_ptr<nv::ErrorCovarianceNV> nverrorcov_;
   std::string covtyp_;
-
+  
+  int nx_;
+  int ny_;
   
 //  void print(std::ostream &) const override;
 

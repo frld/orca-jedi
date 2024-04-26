@@ -87,6 +87,8 @@ class Geometry : public util::Printable {
 //    const F90geom& toFortran() const {return geom_->toFortran();}
 
 //  int nvgeom_avail_;          // DJL
+ 
+  int n_levels() const {return n_levels_;}
       
   FieldDType fieldPrecision(std::string variable_name) const;
   std::shared_ptr<eckit::Timer> timer() const {return eckit_timer_;}

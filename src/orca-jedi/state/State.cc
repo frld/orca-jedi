@@ -83,7 +83,7 @@ State::State(const Geometry & geom,
   std::vector<size_t> varSizes = geom_->variableSizes(vars_);
   maskFields.add(geom_->functionSpace().createField<double>(
            atlas::option::name("mask") |
-           atlas::option::levels(31))); 
+           atlas::option::levels(geom_->n_levels()))); 
 
 //    auto field_view = atlas::array::make_view<double, 2>(maskFields[0]);         // DJL
 //    for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
@@ -116,9 +116,12 @@ State::State(const Geometry & geom,
 
   writeGenFieldsToFile("test_statefields_1.nc", geom, validTime(), stateFields_);   // DJL
 
-  writeGenFieldsToFile("test_maskfields_1.nc", geom, validTime(), maskFields);      // DJL
-  
-  applyMaskToStateFields(maskFields);
+// apply mask if supplied
+  if (params.maskFieldFile.value().value_or("") != ""){ 
+     writeGenFieldsToFile("test_maskfields_1.nc", geom, validTime(), maskFields);      // DJL
+    
+     applyMaskToStateFields(maskFields);
+  }
 
 // write out state
   

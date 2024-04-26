@@ -129,8 +129,13 @@ void Covariance::multiply(const Increment & dxin, Increment & dxout) const {
 //   oops::Log::trace() << "Covariance multiply 4 len1 " << len1 << std::endl;
 //   oops::Log::trace() << "Covariance multiply 4 field_view.shape(0) " << field_view.shape(0) << len1 << std::endl;
 
+   atlas::OrcaGrid orcaGrid = geom_.mesh().grid();
+   int nx = orcaGrid.nx() + orcaGrid.haloWest() + orcaGrid.haloEast();
+   int ny = orcaGrid.ny() + orcaGrid.haloNorth() + orcaGrid.haloSouth();
 
-// Shapiro ?
+   oops::Log::debug() << "orcamodel::covariance:: nx " << nx << " ny " << ny << std::endl;
+
+// Shapiro
 
    if (covtyp_ == "Shapiro") {
 
@@ -150,6 +155,11 @@ void Covariance::multiply(const Increment & dxin, Increment & dxout) const {
       float w1 = 0.25;
       float wa = 1 + w1*4;
 
+//      int nx = 182;
+//      int ny = 149;
+
+
+
       for (int it = 0; it < 20; ++it) {
    //   for (atlas::idx_t j = 1; j < field_view.shape(0)-1; ++j) {
    ///      for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
@@ -158,15 +168,13 @@ void Covariance::multiply(const Increment & dxin, Increment & dxout) const {
    //    }
    ///    }
 
-         float xwid = 182;
-         float ywid = 149;
-         for (int xpt = 1; xpt < xwid-1 ; ++xpt){
-            for (int ypt = 1; ypt < ywid-1; ++ypt) {
-               int j0 = ypt*182 + xpt;    // DJL hardwired to work with orca2  
-               int j1 = (ypt-1)*182 + xpt;  
-               int j2 = (ypt+1)*182 + xpt;
-               int j3 = ypt*182 + xpt-1;
-               int j4 = ypt*182 + xpt+1;
+         for (int xpt = 1; xpt < nx-1 ; ++xpt){
+            for (int ypt = 1; ypt < ny-1; ++ypt) {
+               int j0 = ypt*nx + xpt;    // DJL hardwired to work with orca2  
+               int j1 = (ypt-1)*nx + xpt;  
+               int j2 = (ypt+1)*nx + xpt;
+               int j3 = ypt*nx + xpt-1;
+               int j4 = ypt*nx + xpt+1;
 
                field_view(j0, k) = (array[j0][k] + w1*(array[j1][k]+array[j2][k]+array[j3][k]+array[j4][k]))/wa;      
             }
@@ -196,7 +204,8 @@ void Covariance::multiply(const Increment & dxin, Increment & dxout) const {
 
    // Convert from Increment (orca-jedi / atlas) to IncrementNV
 
-      int64_t len1 = 27118;
+     // int64_t len1 = 27118; // orca2
+      int64_t len1 = nx*ny;
 
       std::vector<double> field1array(len1, 0);   
 

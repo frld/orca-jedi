@@ -7,6 +7,8 @@
 #include "orca-jedi/nemovar/ErrorCovarianceNV.h"
 #include "orca-jedi/nemovar/IncrementNV.h"
 
+#include "orca-jedi/geometry/Geometry.h"
+
 #include "atlas/array/MakeView.h"
 #include "atlas/field/Field.h"
 #include "atlas/field/FieldSet.h"
@@ -20,6 +22,9 @@
 
 #include "oops/util/Logger.h"
 #include "saber/oops/Utilities.h"
+
+#include "atlas/mesh.h"
+#include "atlas-orca/grid/OrcaGrid.h"
 
 //include "oops/base/IdentityMatrix.h"
 //include "oops/assimilation/GMRESR.h"
@@ -58,7 +63,8 @@ OrcaJediFilter::OrcaJediFilter(const oops::GeometryData & geometryData,
   : SaberCentralBlockBase(params, xb.validTime()), params_(params),
     geometryData_(geometryData),
     activeVars_(activeVars),
-    ctlVecSize_(0) //,
+    ctlVecSize_(0)
+
 //    covtyp_(covarConf.getString("covtype"))
 //    activeVars_(getActiveVars(params, outerVars)),
 //    innerGeometryData_(geometryData),
@@ -68,7 +74,18 @@ OrcaJediFilter::OrcaJediFilter(const oops::GeometryData & geometryData,
 
    oops::Log::trace() << "OrcaJediFilter Covariance setting up" << std::endl;
 
-   covtyp_ = "Nemovar";  // DJL hardwire
+   geom_.reset(new orcamodel::Geometry(params_.geometry.value(), geometryData.comm()));
+   atlas::OrcaGrid orcaGrid = geom_->mesh().grid();
+   nx_ = orcaGrid.nx() + orcaGrid.haloWest() + orcaGrid.haloEast();
+   ny_ = orcaGrid.ny() + orcaGrid.haloNorth() + orcaGrid.haloSouth();
+
+   oops::Log::debug() << "saberorcajedifilter:: nx_ " << nx_ << " ny_ " << ny_ << std::endl;
+
+   oops::Log::trace() << "Covariance type " << covtyp_ << std::endl;
+      
+//   covtyp_ = "Nemovar";  // DJL hardwire
+
+   covtyp_ = params_.covtype.value();
 
    if (covtyp_ == "Nemovar") {
 
@@ -154,6 +171,14 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
 
       auto array = new double[field_view.shape(0)][10];
 
+// DJL attempt at generic access to geometryData
+//      const auto & connectivity = geometryData_.mesh_.cells().node_connectivity();
+//
+//      oops::Log::trace() << "Covariance connectivity 1000: " << 
+//      connectivity(1000, 0) << " " <<
+//      connectivity(1000, 1) << " " <<
+//      connectivity(1000, 2) << " " << std::endl;      
+
       for (atlas::idx_t j = 0; j < field_view.shape(0); ++j) {
           array[j][k] = field_view(j,k);
       }
@@ -164,6 +189,11 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
       float w1 = 0.25;
       float wa = 1 + w1*4;
 
+  //    int nx = 182;
+  //    int ny = 149;
+  
+      oops::Log::debug() << "saberorcajedifilter:: nx_ " << nx_ << " ny_ " << ny_ << std::endl;
+      
       for (int it = 0; it < 20; ++it) {
    //   for (atlas::idx_t j = 1; j < field_view.shape(0)-1; ++j) {
    ///      for (atlas::idx_t k = 0; k < field_view.shape(1); ++k) {
@@ -172,15 +202,13 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
    //    }
    ///    }
 
-         float xwid = 182;
-         float ywid = 149;
-         for (int xpt = 1; xpt < xwid-1 ; ++xpt){
-            for (int ypt = 1; ypt < ywid-1; ++ypt) {
-               int j0 = ypt*182 + xpt;    // DJL hardwired to work with orca2  
-               int j1 = (ypt-1)*182 + xpt;  
-               int j2 = (ypt+1)*182 + xpt;
-               int j3 = ypt*182 + xpt-1;
-               int j4 = ypt*182 + xpt+1;
+         for (int xpt = 1; xpt < nx_-1 ; ++xpt){
+            for (int ypt = 1; ypt < ny_-1; ++ypt) {
+               int j0 = ypt*nx_ + xpt;    // DJL hardwired to work with orca2  
+               int j1 = (ypt-1)*nx_ + xpt;  
+               int j2 = (ypt+1)*nx_ + xpt;
+               int j3 = ypt*nx_ + xpt-1;
+               int j4 = ypt*nx_ + xpt+1;
 
                field_view(j0, k) = (array[j0][k] + w1*(array[j1][k]+array[j2][k]+array[j3][k]+array[j4][k]))/wa;      
             }
@@ -208,7 +236,8 @@ void OrcaJediFilter::multiply(oops::FieldSet3D & fieldSet) const {
 
    // Convert from Increment (orca-jedi / atlas) to IncrementNV
 
-      int64_t len1 = 27118;
+      //int64_t len1 = 27118;  // orca2
+      int64_t len1 = nx_ * ny_;
 
       std::vector<double> field1array(len1, 0);   
 

@@ -449,8 +449,8 @@ void Geometry::print(std::ostream & os) const {
 }
 
 void Geometry::log_status() const {
-  oops::Log::trace() << "DJL log statusing" << std::endl;
-  oops::Log::trace() << "DJL " << eckit::system::ResourceUsage().maxResidentSetSize() << std::endl;
+//  oops::Log::trace() << "DJL log statusing" << std::endl;
+//  oops::Log::trace() << "DJL " << eckit::system::ResourceUsage().maxResidentSetSize() << std::endl;
 //  oops::Log::trace() << "DJL " << eckit_timer_->elapsed() << std::endl;   // causing a failure
 //  oops::Log::trace() << "DJL" << std::endl;
 //  oops::Log::trace() << "orcamodel::log_status " << eckit_timer_->elapsed() << " "

@@ -13,7 +13,7 @@ geometry: &geom
       nemo field name: sic_tot_var
       model space: surface
       variable type: background variance
-  grid name: ORCA2_T
+  grid name: ORCA1_T
   number levels: 10
   use nemovar: false
 
@@ -22,8 +22,8 @@ background error:
   saber central block:
     saber block name: orca jedi filter
     geometry: *geom
-#    covtype: Nemovar
-    covtype: Shapiro
+    covtype: Nemovar
+#    covtype: Shapiro
 #      function:
 #    saber block name: ID
 #    saber block name: BUMP_NICAS
@@ -87,11 +87,11 @@ dirac:
 background:
   date: 2021-06-30T12:00:00Z
   state variables: [ ice_area_fraction ]
-  nemo field file: Data/orca2_t_nemo.nc
-#  variance field file: Data/orca2_t_bkg_var.nc
-  mask field file: Data/orca2_mask.nc
+  nemo field file: Data/orca1_t_nemo.nc
+#  variance field file: Data/orca1_t_bkg_var.nc
+#  mask field file: Data/orca1_mask.nc
 output dirac:
-  filepath: testoutput/ojsdirac_cov_%id%
+  filepath: testoutput/ojsdirac_cov_orca1_%id%
 #  datadir: testoutput
 #  exp: dirac_cov_%id%
 #  type: an
