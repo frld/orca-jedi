@@ -8,7 +8,7 @@
 #include "atlas/library/Library.h"
 #include "oops/generic/instantiateModelFactory.h"
 
-#include "orca-jedi/run/Run.h"
+#include "oops/runs/Run.h"
 #include "oops/runs/Variational.h"
 #include "oops/base/instantiateCovarFactory.h"
 
@@ -21,7 +21,7 @@
 #include "orca-jedi/utilities/OrcaModelTraits.h"
 
 int main(int argc,  char ** argv) {
-  orcamodel::Run run(argc, argv);
+  oops::Run run(argc, argv);
   oops::instantiateModelFactory<orcamodel::OrcaModelTraits>();
   atlas::Library::instance().initialise();
   oops::instantiateCovarFactory<orcamodel::OrcaModelTraits>();

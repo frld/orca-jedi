@@ -37,6 +37,8 @@ cost function:
     grid name: ORCA2_T
 #    number levels: 10
     number levels: 2
+    init nemovar: true
+    store nemovar: true
   background :
     date: 2021-06-29T12:00:00Z
     state variables: [ ice_area_fraction ]
@@ -150,7 +152,8 @@ variational:
           variable type: background variance
       grid name: ORCA2_T
       number levels: 10
-      use nemovar: true
+      init nemovar: true
+      store nemovar: true
     linear model:
 #      # 3dfgat utilizes the generic identity linear model, implemented in oops::IdentityLinearModel
       name: Identity

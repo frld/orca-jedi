@@ -25,6 +25,8 @@ cost function:
         variable type: background variance
     grid name: ORCA1_T
     number levels: 10
+    init nemovar: true
+    store nemovar: false
   background error:
     covariance model: SABER
     saber central block:

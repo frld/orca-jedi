@@ -45,7 +45,8 @@ class OrcaGeometryParameters : public oops::Parameters {
   oops::RequiredParameter<std::string> gridName
     {"grid name", this};
   oops::RequiredParameter<int> nLevels {"number levels", this};
-  oops::OptionalParameter<bool> useNemovar {"use nemovar", this};
+  oops::OptionalParameter<bool> initNemovar {"init nemovar", this};
+  oops::OptionalParameter<bool> storeNemovar {"store nemovar", this};
   oops::Parameter<int> sourceMeshHalo {"source mesh halo",
     "Size of the MPI halo when using a domain-distributed geometry."
       " The default is 0 (no MPI halo)",

@@ -15,7 +15,8 @@ geometry: &geom
       variable type: background variance
   grid name: ORCA2_T
   number levels: 10
-  use nemovar: false
+  init nemovar: true
+  store nemovar: false
 
 background error:
   covariance model: SABER

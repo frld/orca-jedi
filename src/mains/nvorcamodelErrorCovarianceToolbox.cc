@@ -9,13 +9,13 @@
 #include "oops/generic/instantiateModelFactory.h"
 
 #include "saber/oops/ErrorCovarianceToolbox.h"
-#include "orca-jedi/run/Run.h"
+#include "oops/runs/Run.h"
 #include "oops/base/instantiateCovarFactory.h"
 
 #include "orca-jedi/utilities/OrcaModelTraits.h"
 
 int main(int argc,  char ** argv) {
-  orcamodel::Run run(argc, argv);
+  oops::Run run(argc, argv);
   atlas::Library::instance().initialise();
   oops::instantiateCovarFactory<orcamodel::OrcaModelTraits>();
 

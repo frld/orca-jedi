@@ -101,7 +101,8 @@ class Geometry : public util::Printable {
   size_t n_levels_;
   OrcaGeometryParameters params_;
   atlas::Grid grid_;
-  bool usenemovar_;
+  bool initnemovar_;
+  bool storenemovar_;
   atlas::grid::Partitioner partitioner_;
   atlas::Mesh mesh_;
   atlas::functionspace::NodeColumns funcSpace_;

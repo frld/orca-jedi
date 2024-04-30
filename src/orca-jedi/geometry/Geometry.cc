@@ -4,6 +4,7 @@
 
 #include "orca-jedi/geometry/Geometry.h"
 #include "orca-jedi/nemovar/GeometryNV.h"
+#include "orca-jedi/nemovar/FortranNV.h"
 
 #include "atlas/field/Field.h"
 #include "atlas/field/FieldSet.h"
@@ -48,7 +49,8 @@ Geometry::Geometry(const eckit::Configuration & config,
                       comm_(comm), vars_(orcaVariableFactory(config)),
                       n_levels_(config.getInt("number levels")),
                       grid_(config.getString("grid name")),
-                      usenemovar_(config.getBool("use nemovar", false)),
+                      initnemovar_(config.getBool("init nemovar", false)),
+                      storenemovar_(config.getBool("store nemovar", false)),
                       eckit_timer_(new eckit::Timer("Geometry(ORCA): ", oops::Log::trace()))
 {
     oops::Log::debug() << "Setting up orca-jedi geometry DJL" << std::endl;         // DJL
@@ -72,9 +74,21 @@ Geometry::Geometry(const eckit::Configuration & config,
     funcSpace_ = atlas::functionspace::NodeColumns(
         mesh_, atlas::option::halo(halo));
 
-    oops::Log::debug() << "Checking if we want to also set up orca-jedi nemovar geometry DJL usenemovar_ ="  << usenemovar_ << std::endl;         // DJL
-    if (usenemovar_) {
-       oops::Log::debug() << "Now setting up orca-jedi nemovar geometry DJL" << std::endl;         // DJL
+    static bool nemovar_initialised = false;
+
+    oops::Log::debug() << "Checking if we want to initialise nemovar DJL initnemovar_ ="  << initnemovar_ << std::endl;         // DJL
+    oops::Log::debug() << "Checking if we want to initialise nemovar DJL nemovar_initialised ="  << nemovar_initialised << std::endl;         // DJL
+
+    if (initnemovar_ and !nemovar_initialised) {
+       oops::Log::debug() << "Now calling nemovar init DJL" << std::endl;         // DJL
+       const eckit::Configuration * configc = &config;
+       nv::nv_init_f90(&configc);
+       nemovar_initialised = true;
+    }
+
+    oops::Log::debug() << "Checking if we want to also set up orca-jedi nemovar geometry DJL storenemovar_ ="  << storenemovar_ << std::endl;         // DJL
+    if (storenemovar_) {
+       oops::Log::debug() << "Now setting up orca-jedi nemovar geometry to be stored in jedi geometry DJL" << std::endl;         // DJL
        nvgeom_.reset(new nv::GeometryNV(config));
     }
 
